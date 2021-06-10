@@ -102,11 +102,17 @@ class FlowCalcClass:
 	# =========================================
 	# ASSUMPTIONS
 	# =========================================
-	def gather_flow_metric_assumptions(self):
-		return ['Metrics are based on in progress and completed items',
-				'CSV file is set up so that columns between start and end status are dates only'
-				'Date range is inclusive of start and end sprint'
-				]
+	def get_flow_metric_assumptions(self):
+		assumptions = [['Flow metrics are calculated on completed items only.'],
+					   ['Date range is inclusive of start and end sprint.'],
+					   ['"In Progress" is defined as an item which has started and has not completed by the end date.'],
+					   ['Rounding could cause a trivial amount of difference in some of these calculations.']
+					   ]
+		if 'Cancelled' in Globals.INPUT_CSV_DATAFRAME:
+			assumptions.append(['Cancelled items were excluded from calculations'])
+		print(assumptions)
+		assumptions_df = pd.DataFrame(assumptions, columns=['Assumption'])
+		return assumptions_df
 
 	# =========================================
 	# PREP FUNCTIONS
@@ -157,8 +163,7 @@ class FlowCalcClass:
 		if 'Cancelled' in base_df:
 			cancelled_mask = base_df['Cancelled'] != 'Yes'
 			base_df = base_df.loc[cancelled_mask]
-		# changed code to not gather all columns between start and end column.
-		# temp_df = base_df.loc[:, self.start_col: self.end_col]
+
 		temp_df = base_df.loc[:, [self.start_col, self.end_col, self.categories_column]]
 		temp_df = temp_df.apply(pd.to_datetime, errors='coerce')
 		date_mask = (temp_df[self.start_col] <= self.end_date) & (temp_df[self.end_col].isnull()) | \
@@ -229,18 +234,18 @@ class FlowCalcClass:
 	# With the WIP limit known, calculate how many days were over that WIP limit
 	def calculate_wip_violations(self):
 		self.calcs_going_good = True
-		matching_entries = self.dates_df["WIP"] > self.daily_wip_limit
+		matching_entries = self.dates_df['WIP'] > self.daily_wip_limit
 		return len(self.dates_df.loc[matching_entries])
 
-	# cycle through category array
-	# if no entries match that category, do not move forward
-	# calc lead time, throughput, daily WIP average
-	# write one entry to category dataframe for each category
+	# call function with np array of the categories
+	# once completed, add the work mix type to the Dataframe
 	def calculate_category_metrics(self):
-		print('category array:')
-		print(Globals.FLOW_METRIC_CATEGORIES)
-		vectorized_func = np.vectorize(self.calc_category_details)
-		vectorized_func(Globals.FLOW_METRIC_CATEGORIES)
+		category_function = np.frompyfunc(self.calc_category_details, 1, 0)
+		category_function(Globals.FLOW_METRIC_CATEGORIES)
+		number_completed = Globals.FLOW_METRIC_CATEGORY_RESULTS[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY].sum()
+		Globals.FLOW_METRIC_CATEGORY_RESULTS[Globals.FLOW_METRIC_WORK_MIX_KEY] = \
+			Globals.FLOW_METRIC_CATEGORY_RESULTS[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY] / number_completed
+		Globals.FLOW_METRIC_CATEGORY_RESULTS[Globals.FLOW_METRIC_WORK_MIX_KEY] *= 100
 
 	# Get unique list of parent items
 	# Find the min start date for each parent item and the max end date (or end of period)
@@ -270,7 +275,6 @@ class FlowCalcClass:
 		return total_wip
 
 	def calc_category_details(self, category):
-		print(f'category: {category}')
 		matching_clean_entries = self.clean_df[self.categories_column] == category
 		temp_clean_df = self.clean_df.loc[matching_clean_entries]
 		category_count = len(temp_clean_df)

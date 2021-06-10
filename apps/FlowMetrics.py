@@ -37,6 +37,11 @@ def app():
                     st.write(calculator.get_error_msgs())
                     return
                 calculator.run_flow_metrics()
+                st.header('Assumptions made during calculations')
+                st.write(calculator.get_flow_metric_assumptions())
+                st.header('General Statistics of Metrics')
                 st.write(Globals.FLOW_METRIC_STATS)
+                st.header('Flow Metric Results')
                 st.write(Globals.FLOW_METRIC_RESULTS)
+                st.header('Categorical Results')
                 st.write(Globals.FLOW_METRIC_CATEGORY_RESULTS)
