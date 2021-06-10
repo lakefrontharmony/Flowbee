@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from FlowCalcClass import FlowCalcClass
 
 import Globals
 
@@ -30,5 +31,12 @@ def app():
     if Globals.INPUT_CSV_DATAFRAME is not None:
         if sprint_info_file is not None:
             if submit_button:
-                st.write(f'start col:{start_col}, end col:{end_col}, start sprint:{start_sprint}, end sprint:{end_sprint}, '
-                      f'using categories col:{categories_field}, and daily wip of {daily_wip_limit} items')
+                calculator = FlowCalcClass(start_col, end_col, start_sprint, end_sprint, daily_wip_limit, categories_field, False, '')
+                calculator.prep_for_metrics()
+                if not Globals.GOOD_FOR_GO:
+                    st.write(calculator.get_error_msgs())
+                    return
+                calculator.run_flow_metrics()
+                st.write(Globals.FLOW_METRIC_STATS)
+                st.write(Globals.FLOW_METRIC_RESULTS)
+                st.write(Globals.FLOW_METRIC_CATEGORY_RESULTS)

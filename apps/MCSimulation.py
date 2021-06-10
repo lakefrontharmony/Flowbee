@@ -29,6 +29,8 @@ def app():
         if submit_button:
             calc_class = SimulationCalcClass(hist_duration, start_col, end_col, str(sim_start_date), str(sim_end_date), items_to_complete)
             calc_class.prep_for_simulation()
+            if not Globals.GOOD_FOR_GO:
+                calc_class
             calc_class.run_mc_simulations(Globals.NUM_SIMULATION_ITERATIONS)
 
             st.write(f'How Many items will we complete by {sim_end_date}?')

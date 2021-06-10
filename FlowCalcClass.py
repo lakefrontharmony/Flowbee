@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import sys
+from datetime import datetime
 import Globals
 
 
@@ -30,7 +31,7 @@ class FlowCalcClass:
 			self.errors.append('No matching dates found for Start Sprint')
 			self.prep_going_good = False
 		else:
-			self.start_date = start_series[0]
+			self.start_date = pd.to_datetime(start_series[0])
 
 		end_row = Globals.SPRINT_INFO_DATAFRAME['SprintName'].values == end_sprint
 		end_series = Globals.SPRINT_INFO_DATAFRAME[end_row]['EndDate'].values
@@ -38,7 +39,7 @@ class FlowCalcClass:
 			self.errors.append('No matching dates found for End Sprint')
 			self.prep_going_good = False
 		else:
-			self.end_date = end_series[0]
+			self.end_date = pd.to_datetime(end_series[0])
 
 		self.clean_df = None
 		self.wip_df = None
@@ -65,18 +66,21 @@ class FlowCalcClass:
 
 # TODO: Add category reporting (strategic vs. BMIQ vs. TMIQ, etc)
 	def run_flow_metrics(self):
-		if self.calcs_going_good:
-			self.calculate_average_lead_time()
-			print('Done running Avg Lead Time')
-		if self.calcs_going_good:
-			self.calculate_average_throughput()
-			print('Done running Avg Throughput')
-		if self.calcs_going_good:
-			self.calculate_average_wip()
-			print('Done running Avg WIP')
-		if self.calcs_going_good:
-			self.calculate_wip_violations()
-			print('Done running WIP Violations')
+		avg_lead_time = self.calculate_average_lead_time()
+		print('Done running Avg Lead Time')
+		avg_throughput = self.calculate_average_throughput()
+		print('Done running Avg Throughput')
+		avg_wip = self.calculate_average_wip()
+		print('Done running Avg WIP')
+		wip_violations = self.calculate_wip_violations()
+		print('Done running WIP Violations')
+		flow_data = [[Globals.FLOW_METRIC_LEAD_TIME_KEY, avg_lead_time],
+					 [Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY, avg_throughput],
+					 [Globals.FLOW_METRIC_AVG_WIP_KEY, avg_wip],
+					 [Globals.FLOW_METRIC_WIP_VIOLATIONS_KEY, wip_violations],
+					 [Globals.FLOW_METRIC_WIP_VIOLATIONS_PCT_KEY,f'{round((wip_violations/self.number_of_days)*100, 2)}%']]
+		Globals.FLOW_METRIC_RESULTS = pd.DataFrame(flow_data, columns=['Category', 'Value'])
+
 		if self.calcs_going_good & self.category_calc_toggle:
 			self.calculate_category_metrics()
 			print('Done running category metrics')
@@ -112,7 +116,7 @@ class FlowCalcClass:
 	# Filter to only entries within the appropriate date range.
 	# TODO: Add Parent Column to dataframe
 	def build_clean_dataframe(self):
-		base_df = Globals.FILE_READER.get_data()
+		base_df = Globals.INPUT_CSV_DATAFRAME
 		# filter to only items which have not been cancelled
 		if 'Cancelled' in base_df:
 			cancelled_mask = base_df['Cancelled'] != 'Yes'
@@ -135,7 +139,6 @@ class FlowCalcClass:
 					self.clean_df[self.end_col] <= self.end_date)
 		self.clean_df = self.clean_df.loc[date_mask]
 		# changed code to not gather all columns between start and end column.
-		# self.clean_df = self.clean_df.loc[:, self.start_col: self.end_col]
 		self.clean_df = self.clean_df.loc[:, [self.start_col, self.end_col, self.categories_column]]
 
 		if len(self.clean_df.index) == 0:
@@ -149,7 +152,7 @@ class FlowCalcClass:
 	# Use only items that started before the end date and are still in progress (null on end column or ended after period)
 	# TODO: Add Parent Column to dataframe
 	def build_wip_dataframe(self):
-		base_df = Globals.FILE_READER.get_data()
+		base_df = Globals.INPUT_CSV_DATAFRAME
 		# filter to only items which have not been cancelled
 		if 'Cancelled' in base_df:
 			cancelled_mask = base_df['Cancelled'] != 'Yes'
@@ -175,8 +178,8 @@ class FlowCalcClass:
 		Globals.FLOW_METRIC_CATEGORY_RESULTS = pd.DataFrame(columns=[Globals.FLOW_METRIC_CATEGORY_KEY,
 																	 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY,
 																	 Globals.FLOW_METRIC_LEAD_TIME_KEY,
-																	 Globals.FLOW_METRIC_THROUGHPUT_KEY])
-		Globals.FLOW_METRIC_CATEGORIES = Globals.FILE_READER.get_data()[self.categories_column].unique()
+																	 Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY])
+		Globals.FLOW_METRIC_CATEGORIES = Globals.INPUT_CSV_DATAFRAME[self.categories_column].unique()
 		if len(Globals.FLOW_METRIC_CATEGORIES) == 0:
 			self.category_calc_toggle = False
 			return
@@ -185,11 +188,15 @@ class FlowCalcClass:
 	# Any final value preparations that are helpful for future calculations
 	def final_values_preparation(self):
 		self.number_of_finished_items = len(self.clean_df)
-		Globals.FLOW_METRIC_STATS[Globals.FLOW_METRIC_COMPLETED_ITEMS_KEY] = self.number_of_finished_items
-		Globals.FLOW_METRIC_STATS[Globals.FLOW_METRIC_IP_ITEMS_KEY] = len(self.wip_df)
 		self.number_of_days = \
 			(self.end_date - self.start_date) / np.timedelta64(1, 'D')
-		Globals.FLOW_METRIC_STATS[Globals.FLOW_METRIC_DAYS_KEY] = self.number_of_days
+		stats_data = [[Globals.FLOW_METRIC_START_DATE_KEY, datetime.strftime(self.start_date, '%Y-%m-%d')],
+					  [Globals.FLOW_METRIC_END_DATE_KEY, datetime.strftime(self.end_date, '%Y-%m-%d')],
+					  [Globals.FLOW_METRIC_DAYS_KEY, self.number_of_days],
+					  [Globals.FLOW_METRIC_COMPLETED_ITEMS_KEY, self.number_of_finished_items],
+					  [Globals.FLOW_METRIC_IP_ITEMS_KEY, len(self.wip_df)]
+		]
+		Globals.FLOW_METRIC_STATS = pd.DataFrame(stats_data, columns=['Category', 'Value'])
 
 	# =========================================
 	# FLOW METRICS FUNCTIONS
@@ -203,50 +210,37 @@ class FlowCalcClass:
 	def calculate_average_lead_time(self):
 		self.clean_df['lead_time'] = self.clean_df[self.end_col] - self.clean_df[self.start_col]
 		self.clean_df['lead_time'] = self.clean_df['lead_time'] / np.timedelta64(1, 'D')
-		Globals.FLOW_METRIC_RESULTS[Globals.FLOW_METRIC_LEAD_TIME_KEY] = \
-			round(self.clean_df['lead_time'].sum() / self.number_of_finished_items, 2)
 		self.calcs_going_good = True
+		return round(self.clean_df['lead_time'].sum() / self.number_of_finished_items, 2)
 
 	# Calculate the average number of items completed per week
 	# Count how many items finished, divide by number of days in period, then multiply by 7 (days)
 	def calculate_average_throughput(self):
-		Globals.FLOW_METRIC_RESULTS[Globals.FLOW_METRIC_THROUGHPUT_KEY] = \
-			round((self.number_of_finished_items / self.number_of_days) * 7, 2)
 		self.calcs_going_good = True
+		return round((self.number_of_finished_items / self.number_of_days) * 7, 2)
 
 	# Calculate the daily average wip for each column and as a whole system.
 	# Check the clean_df for completed items, then the wip_df for in progress items.
 	def calculate_average_wip(self):
 		self.dates_df['WIP'] = self.dates_df.apply(lambda row: self.calc_wip_on_date(row, False), axis=1)
-		Globals.FLOW_METRIC_RESULTS[Globals.FLOW_METRIC_AVG_WIP_KEY] = \
-			round(self.dates_df['WIP'].sum()/len(self.dates_df), 2)
 		self.calcs_going_good = True
+		return round(self.dates_df['WIP'].sum()/len(self.dates_df), 2)
 
 	# With the WIP limit known, calculate how many days were over that WIP limit
 	def calculate_wip_violations(self):
+		self.calcs_going_good = True
 		matching_entries = self.dates_df["WIP"] > self.daily_wip_limit
-		Globals.FLOW_METRIC_RESULTS[Globals.FLOW_METRIC_WIP_VIOLATIONS_KEY] = len(self.dates_df.loc[matching_entries])
+		return len(self.dates_df.loc[matching_entries])
 
 	# cycle through category array
 	# if no entries match that category, do not move forward
 	# calc lead time, throughput, daily WIP average
 	# write one entry to category dataframe for each category
 	def calculate_category_metrics(self):
-		# TODO: convert to this method:
-		# category_results = Globals.FLOW_METRIC_CATEGORIES.apply(lambda category: self.calc_category_details(category), axis=1)
-		for category in Globals.FLOW_METRIC_CATEGORIES:
-			matching_clean_entries = self.clean_df[self.categories_column] == category
-			temp_clean_df = self.clean_df.loc[matching_clean_entries]
-			category_count = len(temp_clean_df)
-			if category_count == 0:
-				continue
-			avg_lead_time = round(temp_clean_df['lead_time'].sum() / category_count, 2)
-			avg_throughput = round((category_count / self.number_of_days) * 7, 2)
-			Globals.FLOW_METRIC_CATEGORY_RESULTS = Globals.FLOW_METRIC_CATEGORY_RESULTS.append({Globals.FLOW_METRIC_CATEGORY_KEY: category,
-														 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY: category_count,
-														 Globals.FLOW_METRIC_LEAD_TIME_KEY: avg_lead_time,
-														 Globals.FLOW_METRIC_THROUGHPUT_KEY: avg_throughput},
-														ignore_index= True)
+		print('category array:')
+		print(Globals.FLOW_METRIC_CATEGORIES)
+		vectorized_func = np.vectorize(self.calc_category_details)
+		vectorized_func(Globals.FLOW_METRIC_CATEGORIES)
 
 	# Get unique list of parent items
 	# Find the min start date for each parent item and the max end date (or end of period)
@@ -276,14 +270,16 @@ class FlowCalcClass:
 		return total_wip
 
 	def calc_category_details(self, category):
+		print(f'category: {category}')
 		matching_clean_entries = self.clean_df[self.categories_column] == category
 		temp_clean_df = self.clean_df.loc[matching_clean_entries]
 		category_count = len(temp_clean_df)
-		if category_count == 0:
-			return
-		avg_lead_time = round(temp_clean_df['lead_time'].sum() / category_count, 2)
-		avg_throughput = round((category_count / self.number_of_days) * 7, 2)
-		return pd.DataFrame({Globals.FLOW_METRIC_CATEGORY_KEY: category,
-							 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY: category_count,
-							 Globals.FLOW_METRIC_LEAD_TIME_KEY: avg_lead_time,
-							 Globals.FLOW_METRIC_THROUGHPUT_KEY: avg_throughput})
+		if category_count > 0:
+			avg_lead_time = round(temp_clean_df['lead_time'].sum() / category_count, 2)
+			avg_throughput = round((category_count / self.number_of_days) * 7, 2)
+			Globals.FLOW_METRIC_CATEGORY_RESULTS = \
+				Globals.FLOW_METRIC_CATEGORY_RESULTS.append({Globals.FLOW_METRIC_CATEGORY_KEY: category,
+															 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY: category_count,
+															 Globals.FLOW_METRIC_LEAD_TIME_KEY: avg_lead_time,
+															 Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY: avg_throughput},
+															ignore_index=True)
