@@ -27,19 +27,22 @@ def app():
 
     if Globals.INPUT_CSV_DATAFRAME is not None:
         if submit_button:
-            calc_class = SimulationCalcClass(hist_duration, start_col, end_col, str(sim_start_date), str(sim_end_date), items_to_complete)
-            calc_class.prep_for_simulation()
+            simulator = SimulationCalcClass(hist_duration, start_col, end_col, str(sim_start_date), str(sim_end_date), items_to_complete)
+            simulator.prep_for_simulation()
             if not Globals.GOOD_FOR_GO:
-                calc_class
-            calc_class.run_mc_simulations(Globals.NUM_SIMULATION_ITERATIONS)
+                return
+            simulator.run_mc_simulations(Globals.NUM_SIMULATION_ITERATIONS)
 
-            st.write(f'How Many items will we complete by {sim_end_date}?')
+            st.header('Assumptions made during simulation')
+            st.write(simulator.get_monte_carlo_assumptions())
+
+            st.header(f'How Many items will we complete by {sim_end_date}?')
             how_many_results = Globals.HOW_MANY_SIM_OUTPUT.value_counts().to_frame().reset_index()
             how_many_results.columns = ['Count', 'Output']
             how_many_disp_df = pd.DataFrame(how_many_results['Output'], index=how_many_results['Count'])
             st.bar_chart(how_many_disp_df)
             st.bar_chart(Globals.HOW_MANY_PERCENTILES)
 
-            st.write(f'When will we finish {items_to_complete} items?')
+            st.header(f'When will we finish {items_to_complete} items?')
             display_df = pd.DataFrame(Globals.WHEN_PERCENTILES['end_date'], index=Globals.WHEN_PERCENTILES.index)
             st.bar_chart(display_df)

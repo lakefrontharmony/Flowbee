@@ -62,25 +62,28 @@ class SimulationCalcClass:
 	# =========================================
 	# ASSUMPTIONS
 	# =========================================
-	def gather_flow_metric_assumptions(self):
-		assumptions = ['Simulation is built using throughput of completed items only (not in progress items)',
-					   'Assumes that the historical throughput will be consistent with future throughput',
-					   'CSV file is set up so that start and end columns are dates only'
-					   'Date range is inclusive of start and end date'
+	def get_monte_carlo_assumptions(self):
+		assumptions = [['Simulation is built using throughput of completed items only (not in progress items)'],
+					   ['Assumes that the historical throughput will be consistent with future throughput'],
+					   ['Date range is inclusive of start and end date']
 					   ]
 
 		duration_value = Globals.HIST_TIMEFRAME[self.duration]
 		if duration_value == Globals.HIST_TIMEFRAME['Last Year']:
-			assumptions.append('Historical duration was one calc\'d as year back from today')
+			assumptions.append(['Historical duration was one calc\'d as year back from today'])
 		elif duration_value == Globals.HIST_TIMEFRAME['YTD']:
-			assumptions.append('Historical duration was calc\'d as 01/01 of this year to today')
+			assumptions.append(['Historical duration was calc\'d as 01/01 of this year to today'])
 		elif duration_value.isnumeric():
-			assumptions.append('Historical duration was calc\'d back from the max end column date of the CSV file')
+			assumptions.append(['Historical duration was calc\'d back from the max end column date of the CSV file'])
 
+		if 'Cancelled' in Globals.INPUT_CSV_DATAFRAME:
+			assumptions.append(['Cancelled items were excluded from calculations'])
 		if self.finishing_all_ip_items:
-			assumptions.append('Current IP items are ones that started before today\'s date and have not finished')
+			assumptions.append(['Current IP items are ones that started before today\'s date and have not finished'])
 
-		return assumptions
+		assumptions_df = pd.DataFrame(assumptions, columns=['Assumption'])
+
+		return assumptions_df
 
 	# =========================================
 	# PREP FOR MONTE CARLO SIMULATION FUNCTIONS

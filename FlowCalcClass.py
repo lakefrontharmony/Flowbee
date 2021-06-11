@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import sys
 from datetime import datetime
 import Globals
 
@@ -64,7 +63,6 @@ class FlowCalcClass:
 		else:
 			Globals.GLOBAL_ERROR_MSG = str(self.errors)
 
-# TODO: Add category reporting (strategic vs. BMIQ vs. TMIQ, etc)
 	def run_flow_metrics(self):
 		avg_lead_time = self.calculate_average_lead_time()
 		print('Done running Avg Lead Time')
@@ -110,7 +108,6 @@ class FlowCalcClass:
 					   ]
 		if 'Cancelled' in Globals.INPUT_CSV_DATAFRAME:
 			assumptions.append(['Cancelled items were excluded from calculations'])
-		print(assumptions)
 		assumptions_df = pd.DataFrame(assumptions, columns=['Assumption'])
 		return assumptions_df
 
