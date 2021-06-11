@@ -53,3 +53,5 @@ PERCENTILES_LIST = np.array([0.95,
 							 0.85,
 							 0.70,
 							 0.50])
+
+PIPELINE_JSON_DATAFRAME = None
