@@ -22,5 +22,9 @@ def app():
 		if Globals.PIPELINE_JSON_DATAFRAME is not None:
 			if submit_button:
 				st.write('Opened both files')
-				print('=====')
-				# print(v2_mask)
+				# json_text = []
+				# for i in Globals.PIPELINE_JSON_DATAFRAME['pipelines']:
+				# 	json_text.append(i)
+				# st.write(json_text)
+				# disp_df = pd.DataFrame(json_text)
+				#st.write(disp_df)
