@@ -48,13 +48,9 @@ class SimulationCalcClass:
 	# TODO: Build in Error Handling through simulations
 	def run_mc_simulations(self, iterations):
 		Globals.SIMULATIONS_SUCCESSFUL = False
-		self.run_how_many_simulation(iterations)
-		print('Done running "How Many" Simulation')
+		self.run_monte_carlo_simulations(iterations)
 		if self.sims_going_good:
 			self.build_how_many_percentile_dataframe()
-		if self.sims_going_good:
-			self.run_when_simulations(iterations)
-			print('Done running "When" Simulation')
 		if self.sims_going_good:
 			self.build_when_percentile_dataframe()
 		if self.sims_going_good:
@@ -222,36 +218,31 @@ class SimulationCalcClass:
 	# MONTE CARLO SIMULATION FUNCTIONS
 	# =========================================
 	# "How Many" Simulation
-	def run_how_many_simulation(self, iterations):
-		output_array = np.zeros([0, 1])
+	def run_monte_carlo_simulations(self, iterations):
+		how_many_output_array = np.zeros([0, 1])
+		when_output_array = np.zeros([0, 1])
 		prob_dist = self.dist_df['Frequency'].tolist()
-		# TODO: TEST: Commented code made no difference in the discrepency between how many and when.
-		# simulation_days = int(Globals.NUM_ITEMS_TO_SIMULATE * 20)
+		simulation_days = int(Globals.NUM_ITEMS_TO_SIMULATE * 20)
 		for i in range(iterations):
-			daily_entries_completed_list = self.generator.choice(self.max_entries_per_day+1, self.days_of_simulation, p=prob_dist)
-			# daily_entries_completed_list = self.generator.choice(self.max_entries_per_day+1, simulation_days, p=prob_dist)
-			# daily_entries_completed_list = daily_entries_completed_list[0:self.days_of_simulation]
-			output_array = np.append(output_array, int(sum(daily_entries_completed_list)))
-		Globals.HOW_MANY_SIM_OUTPUT = pd.DataFrame(output_array, columns=['Output'])
+			# How Many
+			daily_entries_completed_list = self.generator.choice(self.max_entries_per_day+1, simulation_days, p=prob_dist)
+			how_many_completed_list = daily_entries_completed_list[:self.days_of_simulation]
+			how_many_output_array = np.append(how_many_output_array, int(sum(how_many_completed_list)))
+
+			# When
+			num_of_days = (np.cumsum(daily_entries_completed_list) < Globals.NUM_ITEMS_TO_SIMULATE).argmin()
+			if num_of_days == 0:
+				print('reached the end of the random array before finding date of completion')
+				self.sims_going_good = False
+				break
+			when_output_array = np.append(when_output_array, num_of_days)
+
+		Globals.HOW_MANY_SIM_OUTPUT = pd.DataFrame(how_many_output_array, columns=['Output'])
+		Globals.WHEN_SIM_OUTPUT = pd.DataFrame(when_output_array, columns=['Output'])
 
 	def build_how_many_percentile_dataframe(self):
 		Globals.HOW_MANY_PERCENTILES = Globals.HOW_MANY_SIM_OUTPUT.quantile(Globals.PERCENTILES_LIST)
 		Globals.HOW_MANY_PERCENTILES.rename(columns={'Output': 'Days_Percentiles'}, inplace=True)
-
-	# "When" Simulation
-	# TODO: This still seems to be returning very high number of days results.
-	def run_when_simulations(self, iterations):
-		output_array = np.zeros([0, 1])
-		prob_dist = self.dist_df['Frequency'].tolist()
-		simulation_days = int(Globals.NUM_ITEMS_TO_SIMULATE * 20)
-		for i in range(iterations):
-			daily_entries_completed_list = self.generator.choice(self.max_entries_per_day+1, simulation_days, p=prob_dist)
-			num_of_days = (np.cumsum(daily_entries_completed_list) < Globals.NUM_ITEMS_TO_SIMULATE).argmin()
-			if num_of_days == 0:
-				print('reached the end of the random array before finding date of completion')
-				break
-			output_array = np.append(output_array, num_of_days)
-		Globals.WHEN_SIM_OUTPUT = pd.DataFrame(output_array, columns=['Output'])
 
 	def build_when_percentile_dataframe(self):
 		Globals.WHEN_PERCENTILES = Globals.WHEN_SIM_OUTPUT.quantile(Globals.PERCENTILES_LIST)
