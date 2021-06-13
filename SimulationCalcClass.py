@@ -26,6 +26,7 @@ class SimulationCalcClass:
 		self.days_of_simulation = 0
 		self.prep_going_good = True
 		self.sims_going_good = True
+		self.generator = np.random.default_rng()
 
 	# =========================================
 	# EXTERNALLY CALLED FUNCTIONS
@@ -69,8 +70,8 @@ class SimulationCalcClass:
 					   ]
 
 		duration_value = Globals.HIST_TIMEFRAME[self.duration]
-		if duration_value == Globals.HIST_TIMEFRAME['Last Year']:
-			assumptions.append(['Historical duration was one calc\'d as year back from today'])
+		if duration_value == Globals.HIST_TIMEFRAME['Last Calendar Year']:
+			assumptions.append(['Historical duration was one calc\'d as last year'])
 		elif duration_value == Globals.HIST_TIMEFRAME['YTD']:
 			assumptions.append(['Historical duration was calc\'d as 01/01 of this year to today'])
 		elif duration_value.isnumeric():
@@ -110,7 +111,7 @@ class SimulationCalcClass:
 	def determine_hist_date_range(self):
 		first_file_date = self.clean_df[self.end_col].min()
 		duration_value = Globals.HIST_TIMEFRAME[self.duration]
-		if duration_value == Globals.HIST_TIMEFRAME['Last Year']:
+		if duration_value == Globals.HIST_TIMEFRAME['Last Calendar Year']:
 			last_year = date.today().year - 1
 			self.start_date =  date(year=last_year,
 								   month=1,
@@ -189,6 +190,20 @@ class SimulationCalcClass:
 	def final_field_preparation(self):
 		self.max_entries_per_day = int(self.dist_df['Count'].max())
 		self.days_of_simulation = (self.sim_end - self.sim_start).days
+		self.days_of_simulation += 1  # include the start date (which date math was not doing)
+
+		self.number_of_finished_items = len(self.clean_df)
+		self.number_of_days = \
+			(self.end_date - self.start_date) / np.timedelta64(1, 'D')
+		self.number_of_days += 1  # include the start date (which date math was not doing)
+		stats_data = [[Globals.MC_HIST_DATE_RANGE_KEY, f"{datetime.strftime(self.start_date, '%Y-%m-%d')} - {datetime.strftime(self.end_date, '%Y-%m-%d')}"],
+					  [Globals.SIM_START_DATE_KEY, datetime.strftime(self.sim_start, '%Y-%m-%d')],
+					  [Globals.SIM_END_DATE_KEY, datetime.strftime(self.sim_end, '%Y-%m-%d')],
+					  [Globals.NUMBER_OF_SIM_DAYS_KEY, self.days_of_simulation],
+					  [Globals.NUMBER_OF_ITEMS_KEY, Globals.NUM_ITEMS_TO_SIMULATE],
+					  [Globals.MAX_ENTRIES_PER_DAY_KEY, self.max_entries_per_day]
+					  ]
+		Globals.MC_SIMULATION_STATS = pd.DataFrame(stats_data, columns=['Category', 'Value'])
 
 	# Number of items in progress is defined as anything that started before today in the start column,
 	# and has not ended.
@@ -210,23 +225,27 @@ class SimulationCalcClass:
 	def run_how_many_simulation(self, iterations):
 		output_array = np.zeros([0, 1])
 		prob_dist = self.dist_df['Frequency'].tolist()
+		# TODO: TEST: Commented code made no difference in the discrepency between how many and when.
+		# simulation_days = int(Globals.NUM_ITEMS_TO_SIMULATE * 20)
 		for i in range(iterations):
-			daily_entries_completed_list = np.random.choice(self.max_entries_per_day+1, self.days_of_simulation, p=prob_dist)
+			daily_entries_completed_list = self.generator.choice(self.max_entries_per_day+1, self.days_of_simulation, p=prob_dist)
+			# daily_entries_completed_list = self.generator.choice(self.max_entries_per_day+1, simulation_days, p=prob_dist)
+			# daily_entries_completed_list = daily_entries_completed_list[0:self.days_of_simulation]
 			output_array = np.append(output_array, int(sum(daily_entries_completed_list)))
 		Globals.HOW_MANY_SIM_OUTPUT = pd.DataFrame(output_array, columns=['Output'])
 
 	def build_how_many_percentile_dataframe(self):
 		Globals.HOW_MANY_PERCENTILES = Globals.HOW_MANY_SIM_OUTPUT.quantile(Globals.PERCENTILES_LIST)
-		Globals.HOW_MANY_PERCENTILES.rename(columns={'Output': 'Percentiles'}, inplace=True)
+		Globals.HOW_MANY_PERCENTILES.rename(columns={'Output': 'Days_Percentiles'}, inplace=True)
 
 	# "When" Simulation
-	# TODO: This still seems to be returning very high numbers. Walk through this one more time.
+	# TODO: This still seems to be returning very high number of days results.
 	def run_when_simulations(self, iterations):
 		output_array = np.zeros([0, 1])
 		prob_dist = self.dist_df['Frequency'].tolist()
 		simulation_days = int(Globals.NUM_ITEMS_TO_SIMULATE * 20)
 		for i in range(iterations):
-			daily_entries_completed_list = np.random.choice(self.max_entries_per_day+1, simulation_days, p=prob_dist)
+			daily_entries_completed_list = self.generator.choice(self.max_entries_per_day+1, simulation_days, p=prob_dist)
 			num_of_days = (np.cumsum(daily_entries_completed_list) < Globals.NUM_ITEMS_TO_SIMULATE).argmin()
 			if num_of_days == 0:
 				print('reached the end of the random array before finding date of completion')
@@ -236,10 +255,10 @@ class SimulationCalcClass:
 
 	def build_when_percentile_dataframe(self):
 		Globals.WHEN_PERCENTILES = Globals.WHEN_SIM_OUTPUT.quantile(Globals.PERCENTILES_LIST)
-		Globals.WHEN_PERCENTILES.rename(columns={'Output': 'Percentiles'}, inplace=True)
-		Globals.WHEN_PERCENTILES['end_date'] = Globals.WHEN_PERCENTILES['Percentiles']
-		Globals.WHEN_PERCENTILES['end_date'] = \
-			Globals.WHEN_PERCENTILES['end_date'].apply(lambda x: self.sim_start + timedelta(days=x))
+		Globals.WHEN_PERCENTILES.rename(columns={'Output': 'Days_Percentiles'}, inplace=True)
+		Globals.WHEN_PERCENTILES['End_date'] = Globals.WHEN_PERCENTILES['Days_Percentiles']
+		Globals.WHEN_PERCENTILES['End_date'] = \
+			Globals.WHEN_PERCENTILES['End_date'].apply(lambda duration: self.sim_start + timedelta(days=duration))
 
 	# =========================================
 	# ERROR HANDLING

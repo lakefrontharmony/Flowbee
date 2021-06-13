@@ -36,13 +36,17 @@ def app():
             st.header('Assumptions made during simulation')
             st.write(simulator.get_monte_carlo_assumptions())
 
+            st.header('General Statistics of Simulations')
+            st.write(Globals.MC_SIMULATION_STATS)
+
             st.header(f'How Many items will we complete by {sim_end_date}?')
             how_many_results = Globals.HOW_MANY_SIM_OUTPUT.value_counts().to_frame().reset_index()
             how_many_results.columns = ['Count', 'Output']
             how_many_disp_df = pd.DataFrame(how_many_results['Output'], index=how_many_results['Count'])
-            st.bar_chart(how_many_disp_df)
+            # st.bar_chart(how_many_disp_df)
             st.bar_chart(Globals.HOW_MANY_PERCENTILES)
 
             st.header(f'When will we finish {items_to_complete} items?')
-            display_df = pd.DataFrame(Globals.WHEN_PERCENTILES['end_date'], index=Globals.WHEN_PERCENTILES.index)
+            st.write(Globals.WHEN_PERCENTILES)
+            display_df = pd.DataFrame(Globals.WHEN_PERCENTILES['End_date'], index=Globals.WHEN_PERCENTILES.index)
             st.bar_chart(display_df)

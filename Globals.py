@@ -8,8 +8,8 @@ SPRINT_INFO_DATAFRAME = None
 
 HIST_TIMEFRAME = {'All': '9999', 'Last Month': '30',
 				  'Last 10 Weeks': '70', 'Last 20 Weeks': '140',
-				  'Last 30 Weeks': '210', 'Last 6 Months': '182',
-				  'Last Year': 'LY', 'YTD': 'YTD'}
+				  'Last 30 Weeks': '210', 'Last 6 Months': '182', 'Last 12 Months': '365',
+				  'Last Calendar Year': 'LY', 'YTD': 'YTD'}
 HIST_DURATIONS = ['9999', '30',
 				  '70', '140',
 				  '210', '182',
@@ -44,6 +44,13 @@ GOOD_FOR_GO = False
 SIMULATIONS_SUCCESSFUL = False
 GLOBAL_ERROR_MSG = ''
 
+MC_SIMULATION_STATS = None
+MC_HIST_DATE_RANGE_KEY = 'Historical Date Range Used'
+SIM_START_DATE_KEY = 'Simulation Start Date'
+SIM_END_DATE_KEY = 'Simulation End Date'
+NUMBER_OF_SIM_DAYS_KEY = 'Number of Days for "How Many" Sim'
+NUMBER_OF_ITEMS_KEY = 'Number of Items for "When" Sim'
+MAX_ENTRIES_PER_DAY_KEY = 'Max Throughput Per Day:'
 HOW_MANY_SIM_OUTPUT = None
 HOW_MANY_PERCENTILES = None
 WHEN_SIM_OUTPUT = None
