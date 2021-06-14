@@ -1,13 +1,13 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from datetime import timedelta
 from SimulationCalcClass import SimulationCalcClass
 
 import Globals
 
 
 def app():
-
     if Globals.INPUT_CSV_DATAFRAME is not None:
         mc_form = st.sidebar.form('Monte Carlo Submit')
         start_col = mc_form.selectbox('Choose Start Status', Globals.INPUT_CSV_DATAFRAME.columns)
@@ -39,14 +39,32 @@ def app():
             st.header('General Statistics of Simulations')
             st.write(Globals.MC_SIMULATION_STATS)
 
+            # Display "How Many" data
             st.header(f'How Many items will we complete by {sim_end_date}?')
-            how_many_results = Globals.HOW_MANY_SIM_OUTPUT.value_counts().to_frame().reset_index()
-            how_many_results.columns = ['Count', 'Output']
-            how_many_disp_df = pd.DataFrame(how_many_results['Output'], index=how_many_results['Count'])
-            # st.bar_chart(how_many_disp_df)
-            st.bar_chart(Globals.HOW_MANY_PERCENTILES)
+            st.write(Globals.HOW_MANY_PERCENTILES)
 
+            st.bar_chart(build_how_many_disp_df())
+
+            # Display "When" data
             st.header(f'When will we finish {items_to_complete} items?')
             st.write(Globals.WHEN_PERCENTILES)
-            display_df = pd.DataFrame(Globals.WHEN_PERCENTILES['End_date'], index=Globals.WHEN_PERCENTILES.index)
-            st.bar_chart(display_df)
+
+            st.bar_chart(build_when_disp_df())
+
+
+def build_how_many_disp_df():
+    how_many_results = Globals.HOW_MANY_SIM_OUTPUT.value_counts(sort=False).to_frame().reset_index()
+    how_many_results.columns = ['Count', 'Output']
+    # Convert the Count to an index of the df and then drop the 'Count' column
+    how_many_results = how_many_results.set_index(how_many_results['Count'])
+    return how_many_results.drop(['Count'], axis=1)
+
+
+def build_when_disp_df():
+    when_results = Globals.WHEN_SIM_OUTPUT.value_counts(sort=False).to_frame().reset_index()
+    when_results.columns = ['End_date', 'Output']
+    when_results['End_date'] = when_results['End_date'].apply(lambda duration:
+                                                              Globals.SIM_START_DATE + timedelta(days=duration))
+    # Convert the End_date to an index of the df and then drop the 'End_date' column
+    when_results = when_results.set_index(when_results['End_date'])
+    return when_results.drop(['End_date'], axis=1)

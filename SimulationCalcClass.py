@@ -54,6 +54,8 @@ class SimulationCalcClass:
 		if self.sims_going_good:
 			self.build_when_percentile_dataframe()
 		if self.sims_going_good:
+			self.log_run_stats()
+		if self.sims_going_good:
 			Globals.SIMULATIONS_SUCCESSFUL = True
 
 	# =========================================
@@ -78,9 +80,7 @@ class SimulationCalcClass:
 		if self.finishing_all_ip_items:
 			assumptions.append(['Current IP items are ones that started before today\'s date and have not finished'])
 
-		assumptions_df = pd.DataFrame(assumptions, columns=['Assumption'])
-
-		return assumptions_df
+		return pd.DataFrame(assumptions, columns=['Assumption'])
 
 	# =========================================
 	# PREP FOR MONTE CARLO SIMULATION FUNCTIONS
@@ -183,6 +183,7 @@ class SimulationCalcClass:
 		self.dist_df['Frequency'] = self.dist_df['Frequency'].fillna(0)
 
 	# Any global fields that are helpful to have frequently during simulations.
+	# Also building a general stats df for later reference
 	def final_field_preparation(self):
 		self.max_entries_per_day = int(self.dist_df['Count'].max())
 		self.days_of_simulation = (self.sim_end - self.sim_start).days
@@ -193,8 +194,7 @@ class SimulationCalcClass:
 			(self.end_date - self.start_date) / np.timedelta64(1, 'D')
 		self.number_of_days += 1  # include the start date (which date math was not doing)
 		stats_data = [[Globals.MC_HIST_DATE_RANGE_KEY, f"{datetime.strftime(self.start_date, '%Y-%m-%d')} - {datetime.strftime(self.end_date, '%Y-%m-%d')}"],
-					  [Globals.SIM_START_DATE_KEY, datetime.strftime(self.sim_start, '%Y-%m-%d')],
-					  [Globals.SIM_END_DATE_KEY, datetime.strftime(self.sim_end, '%Y-%m-%d')],
+					  [Globals.SIM_DATE_RANGE_KEY, f"{datetime.strftime(self.sim_start, '%Y-%m-%d')} - {datetime.strftime(self.sim_end, '%Y-%m-%d')}"],
 					  [Globals.NUMBER_OF_SIM_DAYS_KEY, self.days_of_simulation],
 					  [Globals.NUMBER_OF_ITEMS_KEY, Globals.NUM_ITEMS_TO_SIMULATE],
 					  [Globals.MAX_ENTRIES_PER_DAY_KEY, self.max_entries_per_day]
@@ -217,7 +217,6 @@ class SimulationCalcClass:
 	# =========================================
 	# MONTE CARLO SIMULATION FUNCTIONS
 	# =========================================
-	# "How Many" Simulation
 	def run_monte_carlo_simulations(self, iterations):
 		how_many_output_array = np.zeros([0, 1])
 		when_output_array = np.zeros([0, 1])
@@ -241,15 +240,39 @@ class SimulationCalcClass:
 		Globals.WHEN_SIM_OUTPUT = pd.DataFrame(when_output_array, columns=['Output'])
 
 	def build_how_many_percentile_dataframe(self):
-		Globals.HOW_MANY_PERCENTILES = Globals.HOW_MANY_SIM_OUTPUT.quantile(Globals.PERCENTILES_LIST)
+		calc_percentiles = 1 - Globals.PERCENTILES_LIST
+		Globals.HOW_MANY_PERCENTILES = Globals.HOW_MANY_SIM_OUTPUT.quantile(calc_percentiles)
 		Globals.HOW_MANY_PERCENTILES.rename(columns={'Output': 'Days_Percentiles'}, inplace=True)
+		Globals.HOW_MANY_PERCENTILES.index = Globals.PERCENTILES_LIST
 
 	def build_when_percentile_dataframe(self):
-		Globals.WHEN_PERCENTILES = Globals.WHEN_SIM_OUTPUT.quantile(Globals.PERCENTILES_LIST)
+		calc_percentiles = 1 - Globals.PERCENTILES_LIST
+		Globals.WHEN_PERCENTILES = Globals.WHEN_SIM_OUTPUT.quantile(calc_percentiles)
 		Globals.WHEN_PERCENTILES.rename(columns={'Output': 'Days_Percentiles'}, inplace=True)
+		Globals.WHEN_PERCENTILES.index = Globals.PERCENTILES_LIST
 		Globals.WHEN_PERCENTILES['End_date'] = Globals.WHEN_PERCENTILES['Days_Percentiles']
 		Globals.WHEN_PERCENTILES['End_date'] = \
 			Globals.WHEN_PERCENTILES['End_date'].apply(lambda duration: self.sim_start + timedelta(days=duration))
+		Globals.WHEN_PERCENTILES['End_date'] = Globals.WHEN_PERCENTILES['End_date'].dt.strftime('%Y-%m-%d')
+
+	# Append to the General Stats df with run stats.
+	def log_run_stats(self):
+		avg_days_to_completion = round(sum(Globals.WHEN_SIM_OUTPUT['Output']) / len(Globals.WHEN_SIM_OUTPUT['Output']), 0)
+		avg_completion_date = self.sim_start + timedelta(days=avg_days_to_completion)
+		avg_completion_date = avg_completion_date.strftime('%Y-%m-%d')
+
+		mode_days_to_completion = Globals.WHEN_SIM_OUTPUT.mode()['Output'][0]
+		mode_completion_date = self.sim_start + timedelta(days=mode_days_to_completion)
+		mode_completion_date = mode_completion_date.strftime('%Y-%m-%d')
+		stats_data = [[Globals.MC_AVG_NUM_COMPLETED_KEY,
+					   f'{round(sum(Globals.HOW_MANY_SIM_OUTPUT["Output"]) / len(Globals.HOW_MANY_SIM_OUTPUT["Output"]), 0)} items'],
+					  [Globals.MC_MODE_NUM_COMPLETED_KEY, f'{Globals.HOW_MANY_SIM_OUTPUT.mode()["Output"][0]} items'],
+					  [Globals.MC_AVG_DAYS_TO_COMPLETE_KEY, avg_completion_date],
+					  [Globals.MC_MODE_DAYS_TO_COMPLETE_KEY, mode_completion_date]
+					  ]
+		new_data = pd.DataFrame(stats_data, columns=['Category', 'Value'])
+		Globals.MC_SIMULATION_STATS = Globals.MC_SIMULATION_STATS.append(new_data, ignore_index=True)
+		# Globals.MC_SIMULATION_STATS
 
 	# =========================================
 	# ERROR HANDLING
