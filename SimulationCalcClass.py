@@ -242,14 +242,12 @@ class SimulationCalcClass:
 	def build_how_many_percentile_dataframe(self):
 		calc_percentiles = 1 - Globals.PERCENTILES_LIST
 		Globals.HOW_MANY_PERCENTILES = Globals.HOW_MANY_SIM_OUTPUT.quantile(calc_percentiles)
-		Globals.HOW_MANY_PERCENTILES.rename(columns={'Output': 'Days_Percentiles'}, inplace=True)
+		Globals.HOW_MANY_PERCENTILES.rename(columns={'Output': 'Count_Percentiles'}, inplace=True)
 		Globals.HOW_MANY_PERCENTILES.index = Globals.PERCENTILES_LIST
 
 	def build_when_percentile_dataframe(self):
-		calc_percentiles = 1 - Globals.PERCENTILES_LIST
-		Globals.WHEN_PERCENTILES = Globals.WHEN_SIM_OUTPUT.quantile(calc_percentiles)
+		Globals.WHEN_PERCENTILES = Globals.WHEN_SIM_OUTPUT.quantile(Globals.PERCENTILES_LIST)
 		Globals.WHEN_PERCENTILES.rename(columns={'Output': 'Days_Percentiles'}, inplace=True)
-		Globals.WHEN_PERCENTILES.index = Globals.PERCENTILES_LIST
 		Globals.WHEN_PERCENTILES['End_date'] = Globals.WHEN_PERCENTILES['Days_Percentiles']
 		Globals.WHEN_PERCENTILES['End_date'] = \
 			Globals.WHEN_PERCENTILES['End_date'].apply(lambda duration: self.sim_start + timedelta(days=duration))

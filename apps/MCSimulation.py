@@ -41,14 +41,17 @@ def app():
 
             # Display "How Many" data
             st.header(f'How Many items will we complete by {sim_end_date}?')
+            st.write('This grid helps you state, "With xx% confidence I can say we will complete "yy" items"')
             st.write(Globals.HOW_MANY_PERCENTILES)
-
+            # Results dataframe
             st.bar_chart(build_how_many_disp_df())
 
             # Display "When" data
             st.header(f'When will we finish {items_to_complete} items?')
+            st.write(f'This grid helps you state, '
+                     f'"With xx% confidence I can say we will complete {items_to_complete} items by yyyy/mm/dd"')
             st.write(Globals.WHEN_PERCENTILES)
-
+            # Results dataframe
             st.bar_chart(build_when_disp_df())
 
 
