@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 from multiapp import MultiApp
-from apps import MCSimulation, FlowMetrics, Releases
+from apps import Instructions, MCSimulation, FlowMetrics, Releases
 import Globals
 
 app = MultiApp()
@@ -18,6 +18,7 @@ This is a calculator for agile metrics. It can run a Monte Carlo Simulation, Cal
 release metrics based on a json file and Jira Export csv file.
 """)
 
+app.add_app('Instructions', Instructions.app)
 app.add_app('Monte Carlo', MCSimulation.app)
 app.add_app('Flow Metrics', FlowMetrics.app)
 app.add_app('Release Metrics', Releases.app)
