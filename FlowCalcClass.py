@@ -241,8 +241,10 @@ class FlowCalcClass:
 		category_function(Globals.FLOW_METRIC_CATEGORIES)
 		number_completed = Globals.FLOW_METRIC_CATEGORY_RESULTS[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY].sum()
 		Globals.FLOW_METRIC_CATEGORY_RESULTS[Globals.FLOW_METRIC_WORK_MIX_KEY] = \
-			Globals.FLOW_METRIC_CATEGORY_RESULTS[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY] / number_completed
+			(Globals.FLOW_METRIC_CATEGORY_RESULTS[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY] / number_completed).astype(float)
 		Globals.FLOW_METRIC_CATEGORY_RESULTS[Globals.FLOW_METRIC_WORK_MIX_KEY] *= 100
+		Globals.FLOW_METRIC_CATEGORY_RESULTS = \
+			Globals.FLOW_METRIC_CATEGORY_RESULTS.round({f'{Globals.FLOW_METRIC_WORK_MIX_KEY}': 2})
 
 	# Get unique list of parent items
 	# Find the min start date for each parent item and the max end date (or end of period)

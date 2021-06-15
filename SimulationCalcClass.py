@@ -263,8 +263,8 @@ class SimulationCalcClass:
 		mode_completion_date = self.sim_start + timedelta(days=mode_days_to_completion)
 		mode_completion_date = mode_completion_date.strftime('%Y-%m-%d')
 		stats_data = [[Globals.MC_AVG_NUM_COMPLETED_KEY,
-					   f'{round(sum(Globals.HOW_MANY_SIM_OUTPUT["Output"]) / len(Globals.HOW_MANY_SIM_OUTPUT["Output"]), 0)} items'],
-					  [Globals.MC_MODE_NUM_COMPLETED_KEY, f'{Globals.HOW_MANY_SIM_OUTPUT.mode()["Output"][0]} items'],
+					   f'{int(sum(Globals.HOW_MANY_SIM_OUTPUT["Output"]) / len(Globals.HOW_MANY_SIM_OUTPUT["Output"]))} items'],
+					  [Globals.MC_MODE_NUM_COMPLETED_KEY, f'{int(Globals.HOW_MANY_SIM_OUTPUT.mode()["Output"][0])} items'],
 					  [Globals.MC_AVG_DAYS_TO_COMPLETE_KEY, avg_completion_date],
 					  [Globals.MC_MODE_DAYS_TO_COMPLETE_KEY, mode_completion_date]
 					  ]
