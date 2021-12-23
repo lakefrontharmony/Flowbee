@@ -163,10 +163,13 @@ class SimulationCalcClass:
 
 		# merge the full list of dates in this period
 		# and the unique list of dates we actually finished items to one dataframe
+		# Save off the results for each day to 'Globals.THROUGHPUT_RUN_DATAFRAME' so that
+		# we can reference that after simulations are complete.
 		temp_df = pd.merge(left=self.dates_df, right=temp_df, how='left', left_on='Date', right_on='Date')
 		temp_df['Frequency_y'] = temp_df['Frequency_y'].fillna(0)
 		temp_df = pd.DataFrame({'Date': self.dates_df['Date'],
 								'Frequency': temp_df['Frequency_x'] + temp_df['Frequency_y']})
+		Globals.THROUGHPUT_RUN_DATAFRAME = temp_df
 		date_freq = temp_df['Frequency'].value_counts(normalize=True)
 		temp_dist_df = pd.DataFrame(date_freq)
 		temp_dist_df = temp_dist_df.reset_index()
@@ -185,6 +188,7 @@ class SimulationCalcClass:
 	# Any global fields that are helpful to have frequently during simulations.
 	# Also building a general stats df for later reference
 	def final_field_preparation(self):
+		Globals.WORKING_PERCENTILES = self.dist_df
 		self.max_entries_per_day = int(self.dist_df['Count'].max())
 		self.days_of_simulation = (self.sim_end - self.sim_start).days
 		self.days_of_simulation += 1  # include the start date (which date math was not doing)

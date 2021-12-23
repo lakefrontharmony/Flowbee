@@ -3,7 +3,6 @@ import numpy as np
 
 # shared variables for program
 INPUT_CSV_DATAFRAME = None
-SPRINT_CSV_FILE_NAME = 'SprintData.csv'
 SPRINT_INFO_DATAFRAME = None
 
 HIST_TIMEFRAME = {'All': '9999', 'Last Month': '30',
@@ -55,6 +54,8 @@ MC_AVG_NUM_COMPLETED_KEY = 'Avg # Completed In "How Many" Sim (Rounded)'
 MC_MODE_NUM_COMPLETED_KEY = 'Most Freq. # Completed In "How Many" Sim'
 MC_AVG_DAYS_TO_COMPLETE_KEY = 'Avg Date To Complete Items In "When" Sim (Rounded)'
 MC_MODE_DAYS_TO_COMPLETE_KEY = 'Most Freq. Date To Complete Items in "When" Sim'
+THROUGHPUT_RUN_DATAFRAME = None
+WORKING_PERCENTILES = None
 HOW_MANY_SIM_OUTPUT = None
 HOW_MANY_PERCENTILES = None
 WHEN_SIM_OUTPUT = None

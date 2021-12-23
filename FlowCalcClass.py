@@ -5,13 +5,14 @@ import Globals
 
 
 class FlowCalcClass:
-	def __init__(self, start_col, end_col, start_sprint, end_sprint, wip_limit, categories, parent_toggle, parent_column):
+	def __init__(self, start_col, end_col, start_sprint, end_sprint, wip_limit, item_names, categories, parent_toggle, parent_column):
 		self.prep_going_good = True
 		self.calcs_going_good = True
 		self.errors = []
 		self.number_of_finished_items = 0
 		self.number_of_days = 0
 		self.daily_wip_limit = wip_limit
+		self.item_names_column = item_names
 		self.categories_column = categories
 		self.category_calc_toggle = False if self.categories_column == '' else True
 		self.parent_toggle = parent_toggle
@@ -39,10 +40,12 @@ class FlowCalcClass:
 			self.prep_going_good = False
 		else:
 			self.end_date = pd.to_datetime(end_series[0])
+		# ToDo: If end date is before start date, error out (as opposed to it abending)
 
 		self.clean_df = None
 		self.wip_df = None
 		self.dates_df = None
+		self.completed_items = None
 
 	# =========================================
 	# EXTERNALLY CALLED FUNCTIONS
@@ -54,6 +57,8 @@ class FlowCalcClass:
 			self.build_wip_dataframe()
 		if self.prep_going_good:
 			self.build_dates_dataframe()
+		if self.prep_going_good:
+			self.build_throughput_run_dataframe()
 		if self.prep_going_good & self.category_calc_toggle:
 			self.prep_categories()
 		if self.prep_going_good:
@@ -96,6 +101,9 @@ class FlowCalcClass:
 
 	def get_error_msgs(self):
 		return self.errors
+
+	def get_completed_item_names(self):
+		return self.completed_items
 
 	# =========================================
 	# ASSUMPTIONS
@@ -141,6 +149,8 @@ class FlowCalcClass:
 		date_mask = (self.clean_df[self.end_col] >= self.start_date) & (
 					self.clean_df[self.end_col] <= self.end_date)
 		self.clean_df = self.clean_df.loc[date_mask]
+		# Before we trim out to just the date fields, save off a df that can be displayed later
+		self.completed_items = self.build_clean_completed_items_df(self.clean_df)
 		# changed code to not gather all columns between start and end column.
 		self.clean_df = self.clean_df.loc[:, [self.start_col, self.end_col, self.categories_column]]
 
@@ -151,6 +161,11 @@ class FlowCalcClass:
 
 		self.prep_going_good = True
 
+	def build_clean_completed_items_df(self, clean_df):
+		temp_df = clean_df.loc[:, [self.item_names_column, self.start_col, self.end_col]]
+		temp_df[self.start_col] = temp_df[self.start_col].astype(str)
+		temp_df[self.end_col] = temp_df[self.end_col].astype(str)
+		return temp_df
 	# Build to only columns between start and end column
 	# Use only items that started before the end date and are still in progress (null on end column or ended after period)
 	# TODO: Add Parent Column to dataframe
@@ -171,6 +186,21 @@ class FlowCalcClass:
 	def build_dates_dataframe(self):
 		rng = pd.date_range(self.start_date, self.end_date)
 		self.dates_df = pd.DataFrame({'Date': rng, 'WIP': 0})
+		self.prep_going_good = True
+
+	# Build a Throughput_Run dataframe in the Globals file.
+	def build_throughput_run_dataframe(self):
+		rng = pd.date_range(self.start_date, self.end_date)
+		temp_dates_df = pd.DataFrame({'Date': rng, 'Frequency': 0})
+		date_counts = self.clean_df[self.end_col].value_counts()
+		temp_df = pd.DataFrame(date_counts)
+		temp_df = temp_df.reset_index()
+		temp_df.columns = ('Date', 'Frequency')
+		temp_df = pd.merge(left=temp_dates_df, right=temp_df, how='left', left_on='Date', right_on='Date')
+		temp_df['Frequency_y'] = temp_df['Frequency_y'].fillna(0)
+		temp_df = pd.DataFrame({'Date': temp_dates_df['Date'],
+								'Frequency': temp_df['Frequency_x'] + temp_df['Frequency_y']})
+		Globals.THROUGHPUT_RUN_DATAFRAME = temp_df
 		self.prep_going_good = True
 
 	# Build a Numpy Array of the categories in the main file.

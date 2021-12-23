@@ -33,6 +33,7 @@ def app():
                 return
             simulator.run_mc_simulations(Globals.NUM_SIMULATION_ITERATIONS)
 
+            st.write(Globals.WORKING_PERCENTILES)
             st.header('Assumptions made during simulation')
             st.write(simulator.get_monte_carlo_assumptions())
 
