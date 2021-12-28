@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 from multiapp import MultiApp
-from apps import Instructions, MCSimulation, FlowMetrics, Releases
+from apps import Instructions, MCSimulation, FlowMetrics, Releases, Charts
 import Globals
 
 app = MultiApp()
@@ -22,5 +22,6 @@ app.add_app('Instructions', Instructions.app)
 app.add_app('Monte Carlo', MCSimulation.app)
 app.add_app('Flow Metrics', FlowMetrics.app)
 app.add_app('Release Metrics', Releases.app)
+app.add_app('Charts', Charts.app)
 
 app.run()
