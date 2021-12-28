@@ -16,6 +16,7 @@ class ChartBuilderClass:
 		self.charts_going_good = True
 		self.clean_df = None
 		self.dates_df = None
+		self.cfd_df = None
 
 	def prep_for_charting(self):
 		if self.prep_going_good:
