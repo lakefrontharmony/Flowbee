@@ -25,6 +25,7 @@ class ChartBuilderClass:
 	def build_charts(self):
 		self.build_cfd_df()
 		self.build_aging_wip_df()
+		self.build_wip_run_df()
 		self.build_throughput_histogram_df()
 		self.build_throughput_run_df()
 		if self.charts_going_good:
@@ -34,6 +35,9 @@ class ChartBuilderClass:
 		pass
 
 	def build_aging_wip_df(self):
+		pass
+
+	def build_wip_run_df(self):
 		pass
 
 	def build_throughput_histogram_df(self):

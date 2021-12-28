@@ -43,10 +43,22 @@ def app():
 			st.write('Insert aging WIP stats')
 			st.write('Insert table of WIP durations')
 
+			st.header('WIP Run Chart')
+			st.write('Insert Chart')
+			st.write('Insert stats')
+
 			st.header('Throughput Histogram')
 			st.write('Insert chart')
 			st.write('Insert stats')
 
 			st.header('Throughput Run Chart')
+			st.write('Insert chart')
+			st.write('Insert stats')
+
+			st.header('Cycle Time Histogram')
+			st.write('Insert chart')
+			st.write('Insert stats')
+
+			st.header('Cycle Time Run Chart')
 			st.write('Insert chart')
 			st.write('Insert stats')
