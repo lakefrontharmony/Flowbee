@@ -42,7 +42,6 @@ def app():
 			dict_test = {'Ready': ready_test, 'InProgress': in_progress_test, 'Closed': closed_test}
 			df_test = pd.DataFrame(dict_test)
 			st.area_chart(df_test)
-			# with st.expander('Stats:'):
 			st.write('Insert CFD stats')
 
 			# Horizontal Separator
@@ -60,7 +59,6 @@ def app():
 				tooltip=['Name', 'Status', 'Age']
 			).interactive()
 			st.altair_chart(alt_chart, use_container_width=True)
-			# with st.expander('Stats:'):
 			st.write('Insert aging WIP stats')
 			st.write('Insert table of WIP durations')
 
@@ -75,7 +73,6 @@ def app():
 												 daily_wip_limit]})
 			wip_pd = wip_pd.set_index('Date')
 			st.line_chart(wip_pd)
-			# with st.expander('Stats:'):
 			st.write('Insert stats')
 
 			# Horizontal Separator
@@ -86,7 +83,6 @@ def app():
 			throughput_numbers = [20, 10, 5, 3, 1, 0, 0, 1, 0, 0, 1]
 			throughput_pd = pd.DataFrame(throughput_numbers, columns=['Throughput'])
 			st.bar_chart(throughput_pd)
-			# with st.expander('Stats:'):
 			st.write('Insert stats')
 
 			# Horizontal Separator
@@ -95,7 +91,6 @@ def app():
 
 			st.header('Throughput Run Chart')
 			st.line_chart(wip_pd)
-			# with st.expander('Stats:'):
 			st.write('Insert stats')
 
 			# Horizontal Separator
@@ -104,7 +99,6 @@ def app():
 
 			st.header('Cycle Time Histogram')
 			st.bar_chart(throughput_pd)
-			# with st.expander('Stats:'):
 			st.write('Insert stats')
 
 			# Horizontal Separator
@@ -113,5 +107,4 @@ def app():
 
 			st.header('Cycle Time Run Chart')
 			st.line_chart(wip_pd)
-			# with st.expander('Stats:'):
 			st.write('Insert stats')
