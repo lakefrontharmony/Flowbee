@@ -42,8 +42,8 @@ def app():
 			dict_test = {'Ready': ready_test, 'InProgress': in_progress_test, 'Closed': closed_test}
 			df_test = pd.DataFrame(dict_test)
 			st.area_chart(df_test)
-			with st.expander('Stats:'):
-				st.write('Insert CFD stats')
+			# with st.expander('Stats:'):
+			st.write('Insert CFD stats')
 
 			# Horizontal Separator
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
