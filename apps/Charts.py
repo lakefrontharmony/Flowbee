@@ -12,8 +12,9 @@ def app():
 		chart_form = st.sidebar.form('Charts Form')
 		start_col = chart_form.selectbox('Choose Start Status', Globals.INPUT_CSV_DATAFRAME.columns)
 		end_col = chart_form.selectbox('Choose End Status', Globals.INPUT_CSV_DATAFRAME.columns)
+		name_col = chart_form.selectbox('Choose Column Containing Item Names', Globals.INPUT_CSV_DATAFRAME.columns)
 		daily_wip_limit = chart_form.number_input('Daily WIP limit', min_value=1, max_value=30, value=10,
-												 step=1)
+												  step=1)
 		chart_start_date = chart_form.date_input('Data Start Date', value=date.today() - timedelta(days=90))
 		submit_button = chart_form.form_submit_button(label='Build Charts')
 
@@ -22,17 +23,15 @@ def app():
 
 	if Globals.INPUT_CSV_DATAFRAME is not None:
 		if submit_button:
-			chart_builder = ChartBuilderClass(start_col, end_col, str(chart_start_date), daily_wip_limit)
+			chart_builder = ChartBuilderClass(start_col, end_col, name_col, str(chart_start_date), daily_wip_limit)
 			chart_builder.prep_for_charting()
 			if not Globals.GOOD_FOR_GO:
-				# TODO: Display errors
-				st.write('Errors during chart preparation')
+				st.write(chart_builder.get_errors())
 				return
 
 			chart_builder.build_charts()
 			if not Globals.CHARTS_BUILT_SUCCESSFULLY:
-				# TODO: Display errors
-				st.write('Errors during chart builds')
+				st.write(chart_builder.get_errors())
 				return
 
 			st.header('Cumulative Flow Diagram (CFD)')
