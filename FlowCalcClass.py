@@ -253,7 +253,7 @@ class FlowCalcClass:
 		return round((self.number_of_finished_items / self.number_of_days) * 7, 2)
 
 	# Calculate the daily average wip for each column and as a whole system.
-	# Check the clean_completed_df for completed items, then the wip_df for in progress items.
+	# Check the clean_df for completed items, then the wip_df for in progress items.
 	def calculate_average_wip(self):
 		self.dates_df['WIP'] = self.dates_df.apply(lambda row: self.calc_wip_on_date(row, False), axis=1)
 		self.calcs_going_good = True

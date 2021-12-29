@@ -35,44 +35,53 @@ def app():
 				return
 
 			st.header('Cumulative Flow Diagram (CFD)')
-			ready_test = [0, 1, 1, 2, 4, 6, 8, 9, 10, 11]
-			in_progress_test = [0, 0, 1, 1, 2, 2, 4, 5, 6, 6]
-			closed_test = [0, 0, 0, 0, 1, 1, 2, 3, 4, 4]
-			dict_test = {'Ready': ready_test, 'InProgress': in_progress_test, 'Closed': closed_test}
-			df_test = pd.DataFrame(dict_test)
-			st.area_chart(df_test)
-			st.write('Insert CFD stats')
+			cfd_chart = alt.Chart(chart_builder.get_cfd_df()).transform_fold(chart_builder.get_date_column_list(),
+																			 as_=['status', 'count']).\
+				mark_area(opacity=0.75).encode(
+				x='Date:T',
+				y=alt.Y('count:Q', stack=None),
+				color='status:N'
+			)
+			st.altair_chart(cfd_chart)
+			# TODO: Create CFD Stats
+			# st.write('Insert CFD stats')
 
 			# Horizontal Separator
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
 			st.header('Aging Work In Progress (Aging WIP)')
-			aging_wip_df = pd.DataFrame({'Name': ['Feature-1', 'Feature-2', 'Feature-3', 'Feature-4', 'Feature-5'],
-										 'Status': ['3-Done', '2-In Progress', '2-In Progress', '1-Ready', '2-In Progress'],
-										 'Age': [15, 20, 4, 1, 8]})
-			alt_chart = alt.Chart(aging_wip_df).mark_circle(size=60).encode(
+			st.header('WORK IN PROGRESS, NOT FUNCTIONING YET')
+			alt_chart = alt.Chart(chart_builder.get_aging_wip_df()).mark_circle(size=60).encode(
 				x='Status',
 				y='Age',
-				color='Name',
+				color='Status',
 				tooltip=['Name', 'Status', 'Age']
 			).interactive()
 			st.altair_chart(alt_chart, use_container_width=True)
-			st.write('Insert aging WIP stats')
-			st.write('Insert table of WIP durations')
+			# TODO: Create Aging WIP Stats
+			# st.write('Insert aging WIP stats')
+			# st.write('Insert table of WIP durations')
 
 			# Horizontal Separator
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
 			st.header('WIP Run Chart')
-			wip_pd = pd.DataFrame({'Date': ['2021-12-01', '2021-12-02', '2021-12-03', '2021-12-04', '2021-12-05'],
-								   'WIP': [15, 15, 13, 17, 13],
-								   'WIP Limit': [daily_wip_limit, daily_wip_limit, daily_wip_limit, daily_wip_limit,
-												 daily_wip_limit]})
-			wip_pd = wip_pd.set_index('Date')
-			st.line_chart(wip_pd)
-			st.write('Insert stats')
+			print(chart_builder.get_run_df())
+			wip_run_chart = alt.Chart(chart_builder.get_run_df())
+			wip_line = wip_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
+				x='Date:T',
+				y='WIP:Q'
+			)
+
+			# TODO: Get Daily Average to display correctly
+			# wip_limit = wip_run_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
+			#	y=alt.YValue(daily_wip_limit)
+			#)
+			st.altair_chart(wip_line)
+			# TODO: Create WIP Run Stats
+			# st.write('Insert stats')
 
 			# Horizontal Separator
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
@@ -81,23 +90,31 @@ def app():
 			st.header('Throughput Histogram')
 			throughput_numbers = [20, 10, 5, 3, 1, 0, 0, 1, 0, 0, 1]
 			throughput_pd = pd.DataFrame(throughput_numbers, columns=['Throughput'])
-			st.bar_chart(throughput_pd)
-			st.write('Insert stats')
+
+			# TODO: Build Histogram
+			# TODO: Create Throughput Run Stats
+			# st.write('Insert stats')
 
 			# Horizontal Separator
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
 			st.header('Throughput Run Chart')
-			st.line_chart(wip_pd)
-			st.write('Insert stats')
+			throughput_run_chart = alt.Chart(chart_builder.get_run_df())
+			throughput_line = throughput_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
+				x='Date:T',
+				y='Throughput:Q'
+			)
+			st.altair_chart(throughput_line)
+			# TODO: Create Throughput Run Stats
+			# st.write('Insert stats')
 
 			# Horizontal Separator
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
 			st.header('Cycle Time Histogram')
-			st.bar_chart(throughput_pd)
+			# st.bar_chart(throughput_pd)
 			st.write('Insert stats')
 
 			# Horizontal Separator
@@ -105,5 +122,5 @@ def app():
 						unsafe_allow_html=True)
 
 			st.header('Cycle Time Run Chart')
-			st.line_chart(wip_pd)
+			# st.line_chart(wip_pd)
 			st.write('Insert stats')
