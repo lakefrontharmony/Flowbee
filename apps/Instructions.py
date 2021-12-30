@@ -1,8 +1,12 @@
 import streamlit as st
 import pandas as pd
 import json
+from PIL import Image
+
 
 def app():
+	flowbee_pic = Image.open('Files/Flowbee-box.jpeg')
+	st.image(flowbee_pic, caption='The original Flowbee')
 	st.title('Instructions')
 	st.header('Input Format Guidelines')
 	st.write("""

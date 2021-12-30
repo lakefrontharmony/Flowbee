@@ -23,6 +23,9 @@ def app():
 
 	if Globals.INPUT_CSV_DATAFRAME is not None:
 		if submit_button:
+			# =========================================
+			# Build Chart Data
+			# =========================================
 			chart_builder = ChartBuilderClass(start_col, end_col, name_col, str(chart_start_date), daily_wip_limit)
 			chart_builder.prep_for_charting()
 			if not Globals.GOOD_FOR_GO:
@@ -34,12 +37,14 @@ def app():
 				st.write(chart_builder.get_errors())
 				return
 
-			# st.header('Cumulative Flow Diagram (CFD)')
+			# =========================================
+			# Flow and In Progress Charts
+			# =========================================
 			cfd_chart = alt.Chart(chart_builder.get_cfd_df(), title='Cumulative Flow Diagram (CFD)').transform_fold(
-				chart_builder.get_date_column_list(), as_=['status', 'count']).\
+				chart_builder.get_date_column_list(), as_=['status', 'Count']).\
 				mark_area(opacity=0.75).encode(
 				x='Date:T',
-				y=alt.Y('count:Q', stack=None),
+				y=alt.Y('Count:Q', stack=None),
 				color='status:N'
 			)
 			st.altair_chart(cfd_chart)
@@ -50,9 +55,11 @@ def app():
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
-			# st.header('Aging Work In Progress (Aging WIP)')
 			st.header('WORK IN PROGRESS, NOT FUNCTIONING YET')
-			alt_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP").mark_circle(size=60).encode(
+			# print('aging WF df:')
+			# chart_builder.get_aging_wip_df().to_csv('agingWIP.csv', index=False)
+			# print(chart_builder.get_aging_wip_df())
+			alt_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP").mark_circle(size=10).encode(
 				x='Status',
 				y='Age',
 				color='Status',
@@ -67,7 +74,6 @@ def app():
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
-			# st.header('WIP Run Chart')
 			wip_run_chart = alt.Chart(chart_builder.get_run_df(), title="WIP Run Chart")
 			wip_line = wip_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
 				x='Date:T',
@@ -86,11 +92,12 @@ def app():
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
-			# st.header('Throughput Histogram')
-
+			# =========================================
+			# Throughput Charts
+			# =========================================
 			throughput_hist_graph = alt.Chart(chart_builder.get_throughput_hist_df(), title="Throughput Histogram")
 			bar_graph = throughput_hist_graph.mark_bar(size=40).encode(
-				x='count:Q',
+				x='Count:Q',
 				y='Throughput:Q'
 			)
 			st.altair_chart(bar_graph)
@@ -102,11 +109,12 @@ def app():
 						unsafe_allow_html=True)
 
 			st.header('Throughput Run Chart')
-			throughput_run_chart = alt.Chart(chart_builder.get_run_df())
+			throughput_run_chart = alt.Chart(chart_builder.get_run_df(), title="Throughput Run Chart")
 			throughput_line = throughput_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
 				x='Date:T',
 				y='Throughput:Q'
 			)
+			# TODO: Build in 85% vertical line for Throughput
 			st.altair_chart(throughput_line)
 			# TODO: Create Throughput Run Stats
 			# st.write('Insert stats')
@@ -115,14 +123,24 @@ def app():
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
-			st.header('Cycle Time Histogram')
-			# st.bar_chart(throughput_pd)
-			st.write('Insert stats')
+			# =========================================
+			# Cycle Time Charts
+			# =========================================
+			# cycle_time_hist_graph = alt.Chart(chart_builder.get_cycle_time_hist_df(), title="Cycle Time Histogram")
+			# bar_graph = cycle_time_hist_graph.mark_bar(size=4).encode(
+			#	x=alt.X('Count:Q', bin=alt.Bin(step=10)),
+			#	y='sum(Age):Q'
+			# )
+			# TODO: Build in 85% vertical line for Cycle Time
+			# st.altair_chart(bar_graph)
+			# TODO: Create Cycle Time Histogram Stats
+			# st.write('Insert stats')
 
 			# Horizontal Separator
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
-			st.header('Cycle Time Run Chart')
+			st.header('Cycle Time Scatterplot')
 			# st.line_chart(wip_pd)
+			# TODO: Create Cycle Time Stats
 			st.write('Insert stats')
