@@ -34,9 +34,9 @@ def app():
 				st.write(chart_builder.get_errors())
 				return
 
-			st.header('Cumulative Flow Diagram (CFD)')
-			cfd_chart = alt.Chart(chart_builder.get_cfd_df()).transform_fold(chart_builder.get_date_column_list(),
-																			 as_=['status', 'count']).\
+			# st.header('Cumulative Flow Diagram (CFD)')
+			cfd_chart = alt.Chart(chart_builder.get_cfd_df(), title='Cumulative Flow Diagram (CFD)').transform_fold(
+				chart_builder.get_date_column_list(), as_=['status', 'count']).\
 				mark_area(opacity=0.75).encode(
 				x='Date:T',
 				y=alt.Y('count:Q', stack=None),
@@ -50,9 +50,9 @@ def app():
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
-			st.header('Aging Work In Progress (Aging WIP)')
+			# st.header('Aging Work In Progress (Aging WIP)')
 			st.header('WORK IN PROGRESS, NOT FUNCTIONING YET')
-			alt_chart = alt.Chart(chart_builder.get_aging_wip_df()).mark_circle(size=60).encode(
+			alt_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP").mark_circle(size=60).encode(
 				x='Status',
 				y='Age',
 				color='Status',
@@ -67,9 +67,8 @@ def app():
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
-			st.header('WIP Run Chart')
-			print(chart_builder.get_run_df())
-			wip_run_chart = alt.Chart(chart_builder.get_run_df())
+			# st.header('WIP Run Chart')
+			wip_run_chart = alt.Chart(chart_builder.get_run_df(), title="WIP Run Chart")
 			wip_line = wip_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
 				x='Date:T',
 				y='WIP:Q'
@@ -87,11 +86,14 @@ def app():
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
-			st.header('Throughput Histogram')
-			throughput_numbers = [20, 10, 5, 3, 1, 0, 0, 1, 0, 0, 1]
-			throughput_pd = pd.DataFrame(throughput_numbers, columns=['Throughput'])
+			# st.header('Throughput Histogram')
 
-			# TODO: Build Histogram
+			throughput_hist_graph = alt.Chart(chart_builder.get_throughput_hist_df(), title="Throughput Histogram")
+			bar_graph = throughput_hist_graph.mark_bar(size=40).encode(
+				x='count:Q',
+				y='Throughput:Q'
+			)
+			st.altair_chart(bar_graph)
 			# TODO: Create Throughput Run Stats
 			# st.write('Insert stats')
 
