@@ -46,7 +46,7 @@ def app():
 				x='Date:T',
 				y=alt.Y('Count:Q', stack=None),
 				color='status:N'
-			)
+			).interactive()
 			st.altair_chart(cfd_chart)
 			# TODO: Create CFD Stats
 			# st.write('Insert CFD stats')
@@ -55,11 +55,11 @@ def app():
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
-			st.header('WORK IN PROGRESS, NOT FUNCTIONING YET')
+			st.header('WORK IN PROGRESS')
 			# print('aging WF df:')
 			# chart_builder.get_aging_wip_df().to_csv('agingWIP.csv', index=False)
 			# print(chart_builder.get_aging_wip_df())
-			alt_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP").mark_circle(size=10).encode(
+			alt_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP").mark_circle(size=60).encode(
 				x='Status',
 				y='Age',
 				color='Status',
@@ -78,7 +78,7 @@ def app():
 			wip_line = wip_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
 				x='Date:T',
 				y='WIP:Q'
-			)
+			).interactive()
 
 			# TODO: Get Daily Average to display correctly
 			# wip_limit = wip_run_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
@@ -99,7 +99,7 @@ def app():
 			bar_graph = throughput_hist_graph.mark_bar(size=40).encode(
 				x='Count:Q',
 				y='Throughput:Q'
-			)
+			).interactive()
 			st.altair_chart(bar_graph)
 			# TODO: Create Throughput Run Stats
 			# st.write('Insert stats')
@@ -126,13 +126,14 @@ def app():
 			# =========================================
 			# Cycle Time Charts
 			# =========================================
-			# cycle_time_hist_graph = alt.Chart(chart_builder.get_cycle_time_hist_df(), title="Cycle Time Histogram")
-			# bar_graph = cycle_time_hist_graph.mark_bar(size=4).encode(
-			#	x=alt.X('Count:Q', bin=alt.Bin(step=10)),
-			#	y='sum(Age):Q'
-			# )
+			cycle_time_hist_graph = alt.Chart(chart_builder.get_cycle_time_hist_df(), title="Cycle Time Histogram")
+			# , bin=alt.Bin(step=10)
+			bar_graph = cycle_time_hist_graph.mark_bar(size=4).encode(
+				x='Age:Q',
+				y='Count:Q'
+			)
 			# TODO: Build in 85% vertical line for Cycle Time
-			# st.altair_chart(bar_graph)
+			st.altair_chart(bar_graph)
 			# TODO: Create Cycle Time Histogram Stats
 			# st.write('Insert stats')
 

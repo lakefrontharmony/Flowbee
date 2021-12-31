@@ -145,22 +145,21 @@ class ChartBuilderClass:
 	# TODO: Can we rework this to not use 'for' loops?
 	def build_aging_wip_df(self):
 		self.aging_wip_df = pd.DataFrame({'Name': self.clean_df[self.name_col], 'Age': 0, 'Status': '', 'Done_Date': pd.NaT})
+
 		for col_name in self.date_col_names:
 			self.aging_wip_df[col_name] = 0
 			status_mask = pd.notnull(self.clean_df[col_name])
 			self.aging_wip_df['Status'].loc[status_mask] = col_name
 		prev_column = self.end_col
 		self.aging_wip_df[self.start_col] = 0
-		print('aging wip before doing addition')
-		print(self.aging_wip_df.head(30))
+
 		for col_name in reversed(self.date_col_names):
 			self.aging_wip_df[col_name] = (self.clean_df[prev_column] - self.clean_df[col_name]).dt.days
+			self.aging_wip_df[col_name] = self.aging_wip_df[col_name].fillna(0)
 			self.aging_wip_df['Age'] += self.aging_wip_df[col_name]
 			prev_column = col_name
 		done_mask = pd.notnull(self.clean_df[self.end_col])
 		self.aging_wip_df['Done_Date'].loc[done_mask] = self.clean_df[self.end_col].loc[done_mask]
-		print('aging wip after doing addition')
-		print(self.aging_wip_df.head(30))
 
 		self.charts_going_good = True
 
@@ -176,14 +175,20 @@ class ChartBuilderClass:
 		self.throughput_hist_df = pd.DataFrame(value_counts)
 		self.throughput_hist_df = self.throughput_hist_df.reset_index()
 		self.throughput_hist_df.rename(columns={'index': 'Count'}, inplace=True)
+		print(self.throughput_hist_df)
 
+	# For some reason this is setting the ages to the index and the counts to the column,
+	# so I had to reverse the columns in the end.
 	def build_cycle_time_histogram_df(self):
 		completed_mask = self.aging_wip_df['Status'] == self.end_col
-		temp_df = pd.DataFrame({'Age': self.aging_wip_df['Age'].loc[completed_mask]})
+		completed_items = self.aging_wip_df.loc[completed_mask].copy()
+		temp_df = pd.DataFrame(completed_items)
 		age_counts = temp_df['Age'].value_counts()
-		self.cycle_time_hist_df = pd.DataFrame(age_counts)
-		self.cycle_time_hist_df.reset_index(inplace=True)
-		self.cycle_time_hist_df.rename(columns={'index': 'Count'}, inplace=True)
+		temp_df2 = pd.DataFrame(age_counts)
+		temp_df2.reset_index(inplace=True)
+		temp_df2.rename(columns={'Age': 'Count', 'index': 'Age'}, inplace=True)
+		self.cycle_time_hist_df = pd.DataFrame({'Age': temp_df2['Age'], 'Count': temp_df2['Count']})
+		print(self.cycle_time_hist_df)
 
 	def build_cycle_time_scatter_df(self):
 		pass
