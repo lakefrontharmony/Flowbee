@@ -57,7 +57,6 @@ def app():
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
-			st.header('WORK IN PROGRESS')
 			aging_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP")
 			aging_wip = aging_chart.mark_circle(size=60).encode(
 				x='Status',
@@ -65,7 +64,11 @@ def app():
 				color='Status',
 				tooltip=['Name', 'Status', 'Age']
 			).interactive()
-			st.altair_chart(aging_wip, use_container_width=True)
+
+			cycle_time_85_confidence_y = aging_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
+				y='CycleTime85:Q'
+			)
+			st.altair_chart(aging_wip + cycle_time_85_confidence_y, use_container_width=True)
 			# TODO: Create Aging WIP Stats
 			# st.write('Insert aging WIP stats')
 			# st.write('Insert table of WIP durations')
@@ -77,11 +80,10 @@ def app():
 			wip_run_chart = alt.Chart(chart_builder.get_run_df(), title="WIP Run Chart")
 			wip_line = wip_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
 				x='Date:T',
-				y='WIP:Q',
+				y=alt.Y('WIP:Q', title='WIP'),
 				tooltip=['Date', 'WIP']
 			).interactive()
 
-			# TODO: Get Daily Average to display correctly
 			wip_limit = wip_run_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
 				y='WIPLimit:Q'
 			)
@@ -102,7 +104,10 @@ def app():
 				y='Count:Q',
 				tooltip=['Throughput', 'Count']
 			).interactive()
-			st.altair_chart(bar_graph)
+			throughput_85_confidence = throughput_hist_graph.mark_rule(strokeDash=[12, 6], size=2).encode(
+				x='Throughput85:Q'
+			)
+			st.altair_chart(bar_graph + throughput_85_confidence)
 			# TODO: Create Throughput Run Stats
 			# st.write('Insert stats')
 
@@ -117,7 +122,7 @@ def app():
 				y='Throughput:Q',
 				tooltip=['Date', 'Throughput']
 			).interactive()
-			# TODO: Build in 85% vertical line for Throughput
+			# TODO: Build in 85% horizontal line for Throughput
 			st.altair_chart(throughput_line)
 			# TODO: Create Throughput Run Stats
 			# st.write('Insert stats')
@@ -136,8 +141,10 @@ def app():
 				y='Count:Q',
 				tooltip=['Age', 'Count']
 			)
-			# TODO: Build in 85% vertical line for Cycle Time
-			st.altair_chart(bar_graph)
+			cycle_time_85_confidence_x = cycle_time_hist_graph.mark_rule(strokeDash=[12, 6], size=2).encode(
+				x='CycleTime85:Q'
+			)
+			st.altair_chart(bar_graph + cycle_time_85_confidence_x)
 			# TODO: Create Cycle Time Histogram Stats
 			# st.write('Insert stats')
 
@@ -151,7 +158,9 @@ def app():
 				y='Age:Q',
 				tooltip=['Name', 'Age', 'Done_Date']
 			).interactive()
-			# TODO: Build in 85% horizontal line for Cycle Time
-			st.altair_chart(scatter_plot, use_container_width=True)
+			cycle_time_85_confidence_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
+				y='CycleTime85:Q'
+			)
+			st.altair_chart(scatter_plot + cycle_time_85_confidence_y, use_container_width=True)
 			# TODO: Create Cycle Time Stats
 			# st.write('Insert stats')

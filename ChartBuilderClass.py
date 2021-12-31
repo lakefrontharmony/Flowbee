@@ -16,6 +16,7 @@ class ChartBuilderClass:
 		self.prep_going_good = True
 		self.charts_going_good = True
 		self.clean_df = None
+		self.completed_items_df = None
 		self.dates_df = None
 		self.cfd_df = None
 		self.aging_wip_df = None
@@ -26,6 +27,13 @@ class ChartBuilderClass:
 		self.date_col_names = []
 		self.errors = []
 
+		self.cycle_time_85_confidence = 0
+		self.cycle_time_50_confidence = 0
+		self.cycle_time_average = 0
+		self.throughput_85_confidence = 0
+		self.throughput_50_confidence = 0
+		self.throughput_average = 0
+
 	# =========================================
 	# EXTERNALLY CALLED FUNCTIONS
 	# =========================================
@@ -33,6 +41,10 @@ class ChartBuilderClass:
 		self.build_clean_df()
 		if self.prep_going_good:
 			self.build_dates_df()
+		if self.prep_going_good:
+			self.build_completed_df()
+		if self.prep_going_good:
+			self.calc_completed_stats()
 		if self.prep_going_good:
 			Globals.GOOD_FOR_GO = True
 		else:
@@ -44,8 +56,7 @@ class ChartBuilderClass:
 		self.build_run_df()
 		self.build_throughput_histogram_df()
 		self.build_cycle_time_histogram_df()
-		if self.charts_going_good:
-			self.build_cycle_time_scatter_df()
+		self.build_cycle_time_scatter_df()
 		if self.charts_going_good:
 			Globals.CHARTS_BUILT_SUCCESSFULLY = True
 		else:
@@ -135,6 +146,27 @@ class ChartBuilderClass:
 		rng = pd.date_range(min_date, datetime.today())
 		self.dates_df = pd.DataFrame({'Date': rng, 'WIP': 0, 'Throughput': 0, 'Avg Cycle Time': 0})
 
+		self.prep_going_good = True
+
+	def build_completed_df(self):
+		completed_mask = pd.notnull(self.clean_df[self.end_col])
+		self.completed_items_df = self.clean_df.loc[completed_mask].copy()
+
+		self.prep_going_good = True
+
+	def calc_completed_stats(self):
+		cycle_time_col = (self.completed_items_df[self.end_col] - self.completed_items_df[self.start_col]).dt.days
+		self.cycle_time_85_confidence = cycle_time_col.quantile(0.85)
+		self.cycle_time_50_confidence = cycle_time_col.quantile(0.50)
+		self.cycle_time_average = round(sum(cycle_time_col) / cycle_time_col.count(), 2)
+
+		throughput_count = self.completed_items_df[self.end_col].value_counts()
+		self.throughput_85_confidence = throughput_count.quantile(0.85)
+		self.throughput_50_confidence = throughput_count.quantile(0.50)
+		self.throughput_average = round(sum(throughput_count) / throughput_count.count(), 2)
+
+		self.prep_going_good = True
+
 	# =========================================
 	# CHARTING FUNCTIONS
 	# =========================================
@@ -147,9 +179,8 @@ class ChartBuilderClass:
 			self.cfd_df[col_name] = self.cfd_df.apply(lambda row: self.calc_completed_on_date(row, col_name), axis=1)
 		self.charts_going_good = True
 
+	# TODO: Make items still in a current state (column) be the duration since today
 	# TODO: Can we rework this to not use 'for' loops?
-	# TODO: Make items still in a current state (column) be the duration since today?
-	# TODO: add column for average cycle time of completed items
 	def build_aging_wip_df(self):
 		self.aging_wip_df = pd.DataFrame({'Name': self.clean_df[self.name_col], 'Age': 0, 'Status': '', 'Done_Date': pd.NaT})
 
@@ -167,6 +198,9 @@ class ChartBuilderClass:
 			prev_column = col_name
 		done_mask = pd.notnull(self.clean_df[self.end_col])
 		self.aging_wip_df['Done_Date'].loc[done_mask] = self.clean_df[self.end_col].loc[done_mask]
+		self.aging_wip_df['CycleTime50'] = self.cycle_time_50_confidence
+		self.aging_wip_df['CycleTime85'] = self.cycle_time_85_confidence
+		self.aging_wip_df['CycleTimeAvg'] = self.cycle_time_average
 
 		self.charts_going_good = True
 
@@ -183,6 +217,9 @@ class ChartBuilderClass:
 		self.throughput_hist_df = pd.DataFrame(value_counts)
 		self.throughput_hist_df.reset_index(inplace=True)
 		self.throughput_hist_df.rename(columns={'Throughput': 'Count', 'index': 'Throughput'}, inplace=True)
+		self.throughput_hist_df['Throughput85'] = self.throughput_85_confidence
+		self.throughput_hist_df['Throughput50'] = self.throughput_50_confidence
+		self.throughput_hist_df['ThroughputAvg'] = self.throughput_average
 
 	def build_cycle_time_histogram_df(self):
 		completed_mask = self.aging_wip_df['Status'] == self.end_col
@@ -191,10 +228,16 @@ class ChartBuilderClass:
 		self.cycle_time_hist_df = pd.DataFrame(age_counts)
 		self.cycle_time_hist_df.reset_index(inplace=True)
 		self.cycle_time_hist_df.rename(columns={'Age': 'Count', 'index': 'Age'}, inplace=True)
+		self.cycle_time_hist_df['CycleTime50'] = self.cycle_time_50_confidence
+		self.cycle_time_hist_df['CycleTime85'] = self.cycle_time_85_confidence
+		self.cycle_time_hist_df['CycleTimeAvg'] = self.cycle_time_average
 
 	def build_cycle_time_scatter_df(self):
 		completed_mask = self.aging_wip_df['Status'] == self.end_col
 		self.cycle_time_scatter_df = self.aging_wip_df.loc[completed_mask].copy()
+		self.cycle_time_scatter_df['CycleTime50'] = self.cycle_time_50_confidence
+		self.cycle_time_scatter_df['CycleTime85'] = self.cycle_time_85_confidence
+		self.cycle_time_scatter_df['CycleTimeAvg'] = self.cycle_time_average
 
 	# =========================================
 	# INTERNAL FUNCTIONS
