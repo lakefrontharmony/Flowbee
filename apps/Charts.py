@@ -20,6 +20,8 @@ def app():
 
 	st.title('Charts')
 	st.write('Complete the form on the sidebar to view charts.')
+	st.markdown('<style>#vg-tooltip-element{z-index: 1000051}</style>',
+				unsafe_allow_html=True)
 
 	if Globals.INPUT_CSV_DATAFRAME is not None:
 		if submit_button:
@@ -41,13 +43,13 @@ def app():
 			# Flow and In Progress Charts
 			# =========================================
 			cfd_chart = alt.Chart(chart_builder.get_cfd_df(), title='Cumulative Flow Diagram (CFD)').transform_fold(
-				chart_builder.get_date_column_list(), as_=['status', 'Count']).\
-				mark_area(opacity=0.75).encode(
+				chart_builder.get_date_column_list(), as_=['status', 'Count'])
+			cfd_lines = cfd_chart.mark_area(opacity=0.75).encode(
 				x='Date:T',
 				y=alt.Y('Count:Q', stack=None),
 				color='status:N'
 			).interactive()
-			st.altair_chart(cfd_chart)
+			st.altair_chart(cfd_lines)
 			# TODO: Create CFD Stats
 			# st.write('Insert CFD stats')
 
@@ -56,16 +58,14 @@ def app():
 						unsafe_allow_html=True)
 
 			st.header('WORK IN PROGRESS')
-			# print('aging WF df:')
-			# chart_builder.get_aging_wip_df().to_csv('agingWIP.csv', index=False)
-			# print(chart_builder.get_aging_wip_df())
-			alt_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP").mark_circle(size=60).encode(
+			aging_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP")
+			aging_wip = aging_chart.mark_circle(size=60).encode(
 				x='Status',
 				y='Age',
 				color='Status',
 				tooltip=['Name', 'Status', 'Age']
 			).interactive()
-			st.altair_chart(alt_chart, use_container_width=True)
+			st.altair_chart(aging_wip, use_container_width=True)
 			# TODO: Create Aging WIP Stats
 			# st.write('Insert aging WIP stats')
 			# st.write('Insert table of WIP durations')
@@ -77,14 +77,15 @@ def app():
 			wip_run_chart = alt.Chart(chart_builder.get_run_df(), title="WIP Run Chart")
 			wip_line = wip_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
 				x='Date:T',
-				y='WIP:Q'
+				y='WIP:Q',
+				tooltip=['Date', 'WIP']
 			).interactive()
 
 			# TODO: Get Daily Average to display correctly
-			# wip_limit = wip_run_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
-			#	y=alt.YValue(daily_wip_limit)
-			#)
-			st.altair_chart(wip_line)
+			wip_limit = wip_run_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
+				y='WIPLimit:Q'
+			)
+			st.altair_chart(wip_line + wip_limit)
 			# TODO: Create WIP Run Stats
 			# st.write('Insert stats')
 
@@ -97,8 +98,9 @@ def app():
 			# =========================================
 			throughput_hist_graph = alt.Chart(chart_builder.get_throughput_hist_df(), title="Throughput Histogram")
 			bar_graph = throughput_hist_graph.mark_bar(size=40).encode(
-				x='Count:Q',
-				y='Throughput:Q'
+				x='Throughput:Q',
+				y='Count:Q',
+				tooltip=['Throughput', 'Count']
 			).interactive()
 			st.altair_chart(bar_graph)
 			# TODO: Create Throughput Run Stats
@@ -112,8 +114,9 @@ def app():
 			throughput_run_chart = alt.Chart(chart_builder.get_run_df(), title="Throughput Run Chart")
 			throughput_line = throughput_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
 				x='Date:T',
-				y='Throughput:Q'
-			)
+				y='Throughput:Q',
+				tooltip=['Date', 'Throughput']
+			).interactive()
 			# TODO: Build in 85% vertical line for Throughput
 			st.altair_chart(throughput_line)
 			# TODO: Create Throughput Run Stats
@@ -130,7 +133,8 @@ def app():
 			# , bin=alt.Bin(step=10)
 			bar_graph = cycle_time_hist_graph.mark_bar(size=4).encode(
 				x='Age:Q',
-				y='Count:Q'
+				y='Count:Q',
+				tooltip=['Age', 'Count']
 			)
 			# TODO: Build in 85% vertical line for Cycle Time
 			st.altair_chart(bar_graph)
@@ -141,7 +145,13 @@ def app():
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 						unsafe_allow_html=True)
 
-			st.header('Cycle Time Scatterplot')
-			# st.line_chart(wip_pd)
+			cycle_scatter_chart = alt.Chart(chart_builder.get_cycle_time_scatter_df(), title="Cycle Time Scatterplot")
+			scatter_plot = cycle_scatter_chart.mark_circle(size=60).encode(
+				x='Done_Date:T',
+				y='Age:Q',
+				tooltip=['Name', 'Age', 'Done_Date']
+			).interactive()
+			# TODO: Build in 85% horizontal line for Cycle Time
+			st.altair_chart(scatter_plot, use_container_width=True)
 			# TODO: Create Cycle Time Stats
-			st.write('Insert stats')
+			# st.write('Insert stats')

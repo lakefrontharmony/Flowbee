@@ -22,6 +22,7 @@ class ChartBuilderClass:
 		self.run_df = None
 		self.throughput_hist_df = None
 		self.cycle_time_hist_df = None
+		self.cycle_time_scatter_df = None
 		self.date_col_names = []
 		self.errors = []
 
@@ -72,6 +73,9 @@ class ChartBuilderClass:
 	def get_cycle_time_hist_df(self):
 		return self.cycle_time_hist_df
 
+	def get_cycle_time_scatter_df(self):
+		return self.cycle_time_scatter_df
+
 	def get_errors(self):
 		return self.errors
 
@@ -121,6 +125,7 @@ class ChartBuilderClass:
 		self.end_col = test_df.columns[-1]
 		self.clean_df = pd.concat([self.clean_df.loc[:, self.name_col].to_frame(),
 								   test_df], axis=1)
+		self.clean_df['WIPLimit'] = self.wip_limit
 
 		self.date_col_names = self.clean_df.loc[:, self.start_col: self.end_col].columns.tolist()
 		self.prep_going_good = True
@@ -143,6 +148,8 @@ class ChartBuilderClass:
 		self.charts_going_good = True
 
 	# TODO: Can we rework this to not use 'for' loops?
+	# TODO: Make items still in a current state (column) be the duration since today?
+	# TODO: add column for average cycle time of completed items
 	def build_aging_wip_df(self):
 		self.aging_wip_df = pd.DataFrame({'Name': self.clean_df[self.name_col], 'Age': 0, 'Status': '', 'Done_Date': pd.NaT})
 
@@ -168,30 +175,26 @@ class ChartBuilderClass:
 		self.run_df['WIP'] = self.run_df.apply(lambda row: self.calc_in_progress_on_date(row), axis=1)
 		# TODO: Review the SimulationCalcClass to see how I did this without cycling through each row before.
 		self.run_df['Throughput'] = self.run_df.apply(lambda row: self.calc_throughput_on_date(row), axis=1)
+		self.run_df['WIPLimit'] = self.wip_limit
 		self.charts_going_good = True
 
 	def build_throughput_histogram_df(self):
 		value_counts = self.run_df['Throughput'].value_counts()
 		self.throughput_hist_df = pd.DataFrame(value_counts)
-		self.throughput_hist_df = self.throughput_hist_df.reset_index()
-		self.throughput_hist_df.rename(columns={'index': 'Count'}, inplace=True)
-		print(self.throughput_hist_df)
+		self.throughput_hist_df.reset_index(inplace=True)
+		self.throughput_hist_df.rename(columns={'Throughput': 'Count', 'index': 'Throughput'}, inplace=True)
 
-	# For some reason this is setting the ages to the index and the counts to the column,
-	# so I had to reverse the columns in the end.
 	def build_cycle_time_histogram_df(self):
 		completed_mask = self.aging_wip_df['Status'] == self.end_col
 		completed_items = self.aging_wip_df.loc[completed_mask].copy()
-		temp_df = pd.DataFrame(completed_items)
-		age_counts = temp_df['Age'].value_counts()
-		temp_df2 = pd.DataFrame(age_counts)
-		temp_df2.reset_index(inplace=True)
-		temp_df2.rename(columns={'Age': 'Count', 'index': 'Age'}, inplace=True)
-		self.cycle_time_hist_df = pd.DataFrame({'Age': temp_df2['Age'], 'Count': temp_df2['Count']})
-		print(self.cycle_time_hist_df)
+		age_counts = completed_items['Age'].value_counts()
+		self.cycle_time_hist_df = pd.DataFrame(age_counts)
+		self.cycle_time_hist_df.reset_index(inplace=True)
+		self.cycle_time_hist_df.rename(columns={'Age': 'Count', 'index': 'Age'}, inplace=True)
 
 	def build_cycle_time_scatter_df(self):
-		pass
+		completed_mask = self.aging_wip_df['Status'] == self.end_col
+		self.cycle_time_scatter_df = self.aging_wip_df.loc[completed_mask].copy()
 
 	# =========================================
 	# INTERNAL FUNCTIONS
