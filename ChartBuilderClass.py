@@ -5,11 +5,12 @@ from datetime import datetime, date, timedelta
 
 
 class ChartBuilderClass:
-	def __init__(self, st_col, end_col, name_col, chart_st, wip_limit):
+	def __init__(self, st_col, end_col, name_col, use_start_date, chart_st, wip_limit):
 		self.start_date = chart_st
 		self.start_col = st_col
 		self.end_col = end_col
 		self.name_col = str(name_col).replace(' ', '')
+		self.use_start_date = use_start_date
 		self.chart_start = datetime.strptime(chart_st, '%Y-%m-%d')
 		self.wip_limit = wip_limit
 
@@ -39,6 +40,8 @@ class ChartBuilderClass:
 	# =========================================
 	def prep_for_charting(self):
 		self.build_clean_df()
+		if self.prep_going_good & self.use_start_date:
+			self.filter_clean_df_to_start_date()
 		if self.prep_going_good:
 			self.build_dates_df()
 		if self.prep_going_good:
@@ -61,6 +64,9 @@ class ChartBuilderClass:
 			Globals.CHARTS_BUILT_SUCCESSFULLY = True
 		else:
 			Globals.CHARTS_BUILT_SUCCESSFULLY = False
+
+	def get_clean_df(self):
+		return self.clean_df
 
 	def get_cfd_df(self):
 		return self.cfd_df
@@ -141,8 +147,14 @@ class ChartBuilderClass:
 		self.date_col_names = self.clean_df.loc[:, self.start_col: self.end_col].columns.tolist()
 		self.prep_going_good = True
 
+	def filter_clean_df_to_start_date(self):
+		include_mask = (pd.isnull(self.clean_df[self.end_col])) | (self.clean_df[self.end_col] >= self.start_date)
+		self.clean_df = self.clean_df.loc[include_mask]
+
 	def build_dates_df(self):
 		min_date = min(self.clean_df[self.start_col])
+		if self.use_start_date:
+			min_date = self.start_date
 		rng = pd.date_range(min_date, datetime.today())
 		self.dates_df = pd.DataFrame({'Date': rng, 'WIP': 0, 'Throughput': 0, 'Avg Cycle Time': 0})
 
@@ -180,6 +192,16 @@ class ChartBuilderClass:
 			self.cfd_df[col_name] = self.cfd_df.apply(lambda row: self.calc_completed_on_date(row, col_name), axis=1)
 		self.charts_going_good = True
 
+	def build_cfd_vectors(self):
+		# build a dataframe with one column of status, one column of dates, and one column of beginning/ending values.
+		# make it so that it follows this pattern:
+		# status | date | value
+		# Ready | 2021-01-01 | 1
+		# Ready | 2022-01-01 | 45
+		# In Prog | 2021-01-01 | 0
+		# In Prog | 2022-01-01 | 30
+		pass
+
 	# TODO: Can we rework this to not use 'for' loops?
 	def build_aging_wip_df(self):
 		# Create a copy of clean_df and set all of the NaT dates to today's date
@@ -202,8 +224,8 @@ class ChartBuilderClass:
 
 		done_mask = pd.notnull(self.clean_df[self.end_col])
 		self.aging_wip_df['Done_Date'].loc[done_mask] = self.clean_df[self.end_col].loc[done_mask]
-		self.aging_wip_df['CycleTime50'] = self.cycle_time_50_confidence
 		self.aging_wip_df['CycleTime85'] = self.cycle_time_85_confidence
+		self.aging_wip_df['CycleTime50'] = self.cycle_time_50_confidence
 		self.aging_wip_df['CycleTimeAvg'] = self.cycle_time_average
 
 		self.charts_going_good = True
@@ -232,15 +254,15 @@ class ChartBuilderClass:
 		self.cycle_time_hist_df = pd.DataFrame(age_counts)
 		self.cycle_time_hist_df.reset_index(inplace=True)
 		self.cycle_time_hist_df.rename(columns={'Age': 'Count', 'index': 'Age'}, inplace=True)
-		self.cycle_time_hist_df['CycleTime50'] = self.cycle_time_50_confidence
 		self.cycle_time_hist_df['CycleTime85'] = self.cycle_time_85_confidence
+		self.cycle_time_hist_df['CycleTime50'] = self.cycle_time_50_confidence
 		self.cycle_time_hist_df['CycleTimeAvg'] = self.cycle_time_average
 
 	def build_cycle_time_scatter_df(self):
 		completed_mask = self.aging_wip_df['Status'] == self.end_col
 		self.cycle_time_scatter_df = self.aging_wip_df.loc[completed_mask].copy()
-		self.cycle_time_scatter_df['CycleTime50'] = self.cycle_time_50_confidence
 		self.cycle_time_scatter_df['CycleTime85'] = self.cycle_time_85_confidence
+		self.cycle_time_scatter_df['CycleTime50'] = self.cycle_time_50_confidence
 		self.cycle_time_scatter_df['CycleTimeAvg'] = self.cycle_time_average
 
 	# =========================================

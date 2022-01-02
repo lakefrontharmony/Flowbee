@@ -8,6 +8,8 @@ from ChartBuilderClass import ChartBuilderClass
 
 
 def app():
+	st.title('Charts')
+
 	if Globals.INPUT_CSV_DATAFRAME is not None:
 		chart_form = st.sidebar.form('Charts Form')
 		start_col = chart_form.selectbox('Choose Start Status', Globals.INPUT_CSV_DATAFRAME.columns)
@@ -15,15 +17,14 @@ def app():
 		name_col = chart_form.selectbox('Choose Column Containing Item Names', Globals.INPUT_CSV_DATAFRAME.columns)
 		daily_wip_limit = chart_form.number_input('Daily WIP limit', min_value=1, max_value=30, value=10,
 												  step=1)
+		use_start_date = chart_form.checkbox('Check to specify a starting date below:')
 		chart_start_date = chart_form.date_input('Data Start Date', value=date.today() - timedelta(days=90))
 		submit_button = chart_form.form_submit_button(label='Build Charts')
-
-	st.title('Charts')
-
-	if Globals.INPUT_CSV_DATAFRAME is None:
+	else:
 		st.write('Please select an input csv file to continue.')
 		return
-	elif not submit_button:
+
+	if not submit_button:
 		st.write('Complete the form on the sidebar to view charts.')
 		return
 
@@ -34,7 +35,7 @@ def app():
 	# =========================================
 	# Build Chart Data
 	# =========================================
-	chart_builder = ChartBuilderClass(start_col, end_col, name_col, str(chart_start_date), daily_wip_limit)
+	chart_builder = ChartBuilderClass(start_col, end_col, name_col, use_start_date, str(chart_start_date), daily_wip_limit)
 	chart_builder.prep_for_charting()
 	if not Globals.GOOD_FOR_GO:
 		st.write(chart_builder.get_errors())
@@ -46,10 +47,17 @@ def app():
 		return
 
 	st.header('Tips:')
-	st.write('Dashed lines on charts:')
 	st.write('Red dashed lines are the 85% confidence level')
 	st.write('Green dashed lines are the 50% confidence level (median of the data)')
 	st.write('Black dashed lines are the average of the data')
+	st.write('Click the "View Fullscreen" option to the right of any chart to see a larger representation')
+
+	# Horizontal Separator
+	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
+				unsafe_allow_html=True)
+
+	st.write('Raw reference Data:')
+	st.write(chart_builder.get_clean_df())
 
 	# Horizontal Separator
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
@@ -66,10 +74,9 @@ def app():
 		color='status:N'
 	).interactive()
 	st.altair_chart(cfd_lines)
-	# TODO: Create CFD Stats
-	show_stats = st.checkbox('Show CFD Stats')
-	# if show_stats:
-	# 	st.write(chart_builder.get_cfd_df())
+	# TODO: Enhance CFD Stats
+	# show_cfd_stats = st.checkbox('Show CFD Stats')
+	st.write(chart_builder.get_cfd_df())
 
 	# Horizontal Separator
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
@@ -108,9 +115,8 @@ def app():
 	)
 	st.altair_chart(aging_wip + cycle_time_85_confidence_y + cycle_time_50_confidence_y + cycle_time_average_y +
 					label_85 + label_50 + label_avg, use_container_width=True)
-	# TODO: Create Aging WIP Stats
-	# st.write('Insert aging WIP stats')
-	# st.write('Insert table of WIP durations')
+	# TODO: Enhance Aging WIP Stats
+	st.write(chart_builder.get_aging_wip_df())
 
 	# Horizontal Separator
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
@@ -122,7 +128,15 @@ def app():
 		y=alt.Y('WIP:Q', title='WIP'),
 		tooltip=['Date', 'WIP']
 	).interactive()
-	wip_limit = wip_run_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
+	average_wip = wip_run_chart.mark_line(color='black').transform_window(
+		rolling_mean='mean(WIP)',
+		frame=[0, 100],
+		groupby=['WIPLimit']
+	).encode(
+		x='Date:T',
+		y='rolling_mean:Q'
+	)
+	wip_limit = wip_run_chart.mark_rule(strokeDash=[12, 6], size=2, color='blue').encode(
 		y='WIPLimit:Q'
 	)
 	label_wip = wip_run_chart.mark_text(align='right', baseline='bottom', dx=-20, color='black').encode(
@@ -130,9 +144,9 @@ def app():
 		alt.Y('WIPLimit:Q'),
 		alt.Text('WIPLimit:Q')
 	)
-	st.altair_chart(wip_line + wip_limit + label_wip)
-	# TODO: Create WIP Run Stats
-	# st.write('Insert stats')
+	st.altair_chart(wip_line + wip_limit + label_wip + average_wip)
+	# TODO: Enhance WIP Run Stats
+	st.write(chart_builder.get_run_df())
 
 	# Horizontal Separator
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
@@ -175,8 +189,8 @@ def app():
 	)
 	st.altair_chart(bar_graph + throughput_85_confidence + throughput_50_confidence + throughput_avg +
 					throughput_hist_label_85 + throughput_hist_label_50 + throughput_hist_label_avg)
-	# TODO: Create Throughput Run Stats
-	# st.write('Insert stats')
+	# TODO: Enhance Throughput Run Stats
+	st.write(chart_builder.get_throughput_hist_df())
 
 	# Horizontal Separator
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
@@ -190,8 +204,8 @@ def app():
 	).interactive()
 	# TODO: Build in 85% horizontal line for Throughput
 	st.altair_chart(throughput_line)
-	# TODO: Create Throughput Run Stats
-	# st.write('Insert stats')
+	# TODO: Create Enhance Run Stats
+	st.write(chart_builder.get_run_df())
 
 	# Horizontal Separator
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
@@ -235,8 +249,8 @@ def app():
 	)
 	st.altair_chart(bar_graph + cycle_time_85_confidence + cycle_time_50_confidence + cycle_time_avg +
 					cycle_time_hist_label_85 + cycle_time_hist_label_50 + cycle_time_hist_label_avg)
-	# TODO: Create Cycle Time Histogram Stats
-	# st.write('Insert stats')
+	# TODO: Enhance Cycle Time Histogram Stats
+	st.write(chart_builder.get_cycle_time_hist_df())
 
 	# Horizontal Separator
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
@@ -275,5 +289,5 @@ def app():
 	st.altair_chart(scatter_plot + cycle_time_85_confidence_y + cycle_time_50_confidence_Y + cycle_time_average_y
 					+ label_85 + label_50 + label_avg,
 					use_container_width=True)
-	# TODO: Create Cycle Time Stats
-	# st.write('Insert stats')
+	# TODO: Enhance Cycle Time Stats
+	st.write(chart_builder.get_cycle_time_scatter_df())
