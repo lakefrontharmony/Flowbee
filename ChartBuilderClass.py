@@ -179,9 +179,12 @@ class ChartBuilderClass:
 			self.cfd_df[col_name] = self.cfd_df.apply(lambda row: self.calc_completed_on_date(row, col_name), axis=1)
 		self.charts_going_good = True
 
-	# TODO: Make items still in a current state (column) be the duration since today
 	# TODO: Can we rework this to not use 'for' loops?
 	def build_aging_wip_df(self):
+		# Create a copy of clean_df and set all of the NaT dates to today's date
+		# (this makes the date math work in the reverse cycle through the date_col_names list)
+		temp_clean_df = self.clean_df.copy()
+		temp_clean_df.fillna(datetime.today(), inplace=True)
 		self.aging_wip_df = pd.DataFrame({'Name': self.clean_df[self.name_col], 'Age': 0, 'Status': '', 'Done_Date': pd.NaT})
 
 		for col_name in self.date_col_names:
@@ -192,10 +195,10 @@ class ChartBuilderClass:
 		self.aging_wip_df[self.start_col] = 0
 
 		for col_name in reversed(self.date_col_names):
-			self.aging_wip_df[col_name] = (self.clean_df[prev_column] - self.clean_df[col_name]).dt.days
-			self.aging_wip_df[col_name] = self.aging_wip_df[col_name].fillna(0)
+			self.aging_wip_df[col_name] = (temp_clean_df[prev_column] - temp_clean_df[col_name]).dt.days
 			self.aging_wip_df['Age'] += self.aging_wip_df[col_name]
 			prev_column = col_name
+
 		done_mask = pd.notnull(self.clean_df[self.end_col])
 		self.aging_wip_df['Done_Date'].loc[done_mask] = self.clean_df[self.end_col].loc[done_mask]
 		self.aging_wip_df['CycleTime50'] = self.cycle_time_50_confidence

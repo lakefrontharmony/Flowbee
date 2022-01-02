@@ -51,7 +51,9 @@ def app():
 			).interactive()
 			st.altair_chart(cfd_lines)
 			# TODO: Create CFD Stats
-			# st.write('Insert CFD stats')
+			show_stats = st.checkbox('Show CFD Stats')
+			# if show_stats:
+			# 	st.write(chart_builder.get_cfd_df())
 
 			# Horizontal Separator
 			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
@@ -60,7 +62,7 @@ def app():
 			aging_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP")
 			aging_wip = aging_chart.mark_circle(size=60).encode(
 				x='Status',
-				y='Age',
+				y=alt.Y('Age', title='Age'),
 				color='Status',
 				tooltip=['Name', 'Status', 'Age']
 			).interactive()
@@ -100,7 +102,7 @@ def app():
 			# =========================================
 			throughput_hist_graph = alt.Chart(chart_builder.get_throughput_hist_df(), title="Throughput Histogram")
 			bar_graph = throughput_hist_graph.mark_bar(size=40).encode(
-				x='Throughput:Q',
+				x=alt.X('Throughput:Q', title='Throughput'),
 				y='Count:Q',
 				tooltip=['Throughput', 'Count']
 			).interactive()
@@ -137,7 +139,7 @@ def app():
 			cycle_time_hist_graph = alt.Chart(chart_builder.get_cycle_time_hist_df(), title="Cycle Time Histogram")
 			# , bin=alt.Bin(step=10)
 			bar_graph = cycle_time_hist_graph.mark_bar(size=4).encode(
-				x='Age:Q',
+				x=alt.X('Age:Q', title='Age'),
 				y='Count:Q',
 				tooltip=['Age', 'Count']
 			)
@@ -154,13 +156,36 @@ def app():
 
 			cycle_scatter_chart = alt.Chart(chart_builder.get_cycle_time_scatter_df(), title="Cycle Time Scatterplot")
 			scatter_plot = cycle_scatter_chart.mark_circle(size=60).encode(
-				x='Done_Date:T',
-				y='Age:Q',
+				x=alt.X('Done_Date:T', title='Completed Date'),
+				y=alt.Y('Age:Q', title='Age'),
 				tooltip=['Name', 'Age', 'Done_Date']
 			).interactive()
-			cycle_time_85_confidence_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
+			cycle_time_85_confidence_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='red').encode(
 				y='CycleTime85:Q'
 			)
-			st.altair_chart(scatter_plot + cycle_time_85_confidence_y, use_container_width=True)
+			cycle_time_50_confidence_Y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='green').encode(
+				y='CycleTime50:Q'
+			)
+			cycle_time_average_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='black').encode(
+				y='CycleTimeAvg:Q'
+			)
+			label_85 = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='red').encode(
+				alt.X('Done_Date:T', aggregate='max'),
+				alt.Y('CycleTime85:Q'),
+				alt.Text('CycleTime85:Q')
+			)
+			label_50 = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='green').encode(
+				alt.X('Done_Date:T', aggregate='max'),
+				alt.Y('CycleTime50:Q'),
+				alt.Text('CycleTime50:Q')
+			)
+			label_avg = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='black').encode(
+				alt.X('Done_Date:T', aggregate='max'),
+				alt.Y('CycleTimeAvg:Q'),
+				alt.Text('CycleTimeAvg:Q')
+			)
+			st.altair_chart(scatter_plot + cycle_time_85_confidence_y + cycle_time_50_confidence_Y + cycle_time_average_y
+							+ label_85 + label_50 + label_avg,
+							use_container_width=True)
 			# TODO: Create Cycle Time Stats
 			# st.write('Insert stats')
