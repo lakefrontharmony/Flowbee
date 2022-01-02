@@ -163,7 +163,8 @@ class ChartBuilderClass:
 		throughput_count = self.completed_items_df[self.end_col].value_counts()
 		self.throughput_85_confidence = throughput_count.quantile(0.85)
 		self.throughput_50_confidence = throughput_count.quantile(0.50)
-		self.throughput_average = round(sum(throughput_count) / throughput_count.count(), 2)
+		num_days = (datetime.today() - self.completed_items_df[self.end_col].min()).days
+		self.throughput_average = round(sum(throughput_count) / num_days, 2)
 
 		self.prep_going_good = True
 

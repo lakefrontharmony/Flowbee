@@ -19,173 +19,261 @@ def app():
 		submit_button = chart_form.form_submit_button(label='Build Charts')
 
 	st.title('Charts')
-	st.write('Complete the form on the sidebar to view charts.')
+
+	if Globals.INPUT_CSV_DATAFRAME is None:
+		st.write('Please select an input csv file to continue.')
+		return
+	elif not submit_button:
+		st.write('Complete the form on the sidebar to view charts.')
+		return
+
+	# This markdown fixes the tooltip overlay for charts when you go to full screen mode.
 	st.markdown('<style>#vg-tooltip-element{z-index: 1000051}</style>',
 				unsafe_allow_html=True)
 
-	if Globals.INPUT_CSV_DATAFRAME is not None:
-		if submit_button:
-			# =========================================
-			# Build Chart Data
-			# =========================================
-			chart_builder = ChartBuilderClass(start_col, end_col, name_col, str(chart_start_date), daily_wip_limit)
-			chart_builder.prep_for_charting()
-			if not Globals.GOOD_FOR_GO:
-				st.write(chart_builder.get_errors())
-				return
+	# =========================================
+	# Build Chart Data
+	# =========================================
+	chart_builder = ChartBuilderClass(start_col, end_col, name_col, str(chart_start_date), daily_wip_limit)
+	chart_builder.prep_for_charting()
+	if not Globals.GOOD_FOR_GO:
+		st.write(chart_builder.get_errors())
+		return
 
-			chart_builder.build_charts()
-			if not Globals.CHARTS_BUILT_SUCCESSFULLY:
-				st.write(chart_builder.get_errors())
-				return
+	chart_builder.build_charts()
+	if not Globals.CHARTS_BUILT_SUCCESSFULLY:
+		st.write(chart_builder.get_errors())
+		return
 
-			# =========================================
-			# Flow and In Progress Charts
-			# =========================================
-			cfd_chart = alt.Chart(chart_builder.get_cfd_df(), title='Cumulative Flow Diagram (CFD)').transform_fold(
-				chart_builder.get_date_column_list(), as_=['status', 'Count'])
-			cfd_lines = cfd_chart.mark_area(opacity=0.75).encode(
-				x='Date:T',
-				y=alt.Y('Count:Q', stack=None),
-				color='status:N'
-			).interactive()
-			st.altair_chart(cfd_lines)
-			# TODO: Create CFD Stats
-			show_stats = st.checkbox('Show CFD Stats')
-			# if show_stats:
-			# 	st.write(chart_builder.get_cfd_df())
+	st.header('Tips:')
+	st.write('Dashed lines on charts:')
+	st.write('Red dashed lines are the 85% confidence level')
+	st.write('Green dashed lines are the 50% confidence level (median of the data)')
+	st.write('Black dashed lines are the average of the data')
 
-			# Horizontal Separator
-			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
-						unsafe_allow_html=True)
+	# Horizontal Separator
+	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
+				unsafe_allow_html=True)
 
-			aging_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP")
-			aging_wip = aging_chart.mark_circle(size=60).encode(
-				x='Status',
-				y=alt.Y('Age', title='Age'),
-				color='Status',
-				tooltip=['Name', 'Status', 'Age']
-			).interactive()
+	# =========================================
+	# Flow and In-Progress Charts
+	# =========================================
+	cfd_chart = alt.Chart(chart_builder.get_cfd_df(), title='Cumulative Flow Diagram (CFD)').transform_fold(
+		chart_builder.get_date_column_list(), as_=['status', 'Count'])
+	cfd_lines = cfd_chart.mark_area(opacity=0.75).encode(
+		x=alt.X('Date:T', title='Date'),
+		y=alt.Y('Count:Q', stack=None),
+		color='status:N'
+	).interactive()
+	st.altair_chart(cfd_lines)
+	# TODO: Create CFD Stats
+	show_stats = st.checkbox('Show CFD Stats')
+	# if show_stats:
+	# 	st.write(chart_builder.get_cfd_df())
 
-			cycle_time_85_confidence_y = aging_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
-				y='CycleTime85:Q'
-			)
-			st.altair_chart(aging_wip + cycle_time_85_confidence_y, use_container_width=True)
-			# TODO: Create Aging WIP Stats
-			# st.write('Insert aging WIP stats')
-			# st.write('Insert table of WIP durations')
+	# Horizontal Separator
+	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
+				unsafe_allow_html=True)
 
-			# Horizontal Separator
-			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
-						unsafe_allow_html=True)
+	aging_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP")
+	aging_wip = aging_chart.mark_circle(size=60).encode(
+		x=alt.X('Status', title='Status'),
+		y=alt.Y('Age', title='Age'),
+		color='Status',
+		tooltip=['Name', 'Status', 'Age']
+	).interactive()
+	cycle_time_85_confidence_y = aging_chart.mark_rule(strokeDash=[12, 6], size=2, color='red').encode(
+		y='CycleTime85:Q'
+	)
+	cycle_time_50_confidence_y = aging_chart.mark_rule(strokeDash=[12, 6], size=2, color='green').encode(
+		y='CycleTime50:Q'
+	)
+	cycle_time_average_y = aging_chart.mark_rule(strokeDash=[12, 6], size=2, color='black').encode(
+		y='CycleTimeAvg:Q'
+	)
+	label_85 = aging_chart.mark_text(align='right', baseline='bottom', dx=40, color='red').encode(
+		alt.X('Status', aggregate='max'),
+		alt.Y('CycleTime85:Q'),
+		alt.Text('CycleTime85:Q')
+	)
+	label_50 = aging_chart.mark_text(align='right', baseline='bottom', dx=60, color='green').encode(
+		alt.X('Status', aggregate='max'),
+		alt.Y('CycleTime50:Q'),
+		alt.Text('CycleTime50:Q')
+	)
+	label_avg = aging_chart.mark_text(align='right', baseline='bottom', dx=40, color='black').encode(
+		alt.X('Status', aggregate='max'),
+		alt.Y('CycleTimeAvg:Q'),
+		alt.Text('CycleTimeAvg:Q')
+	)
+	st.altair_chart(aging_wip + cycle_time_85_confidence_y + cycle_time_50_confidence_y + cycle_time_average_y +
+					label_85 + label_50 + label_avg, use_container_width=True)
+	# TODO: Create Aging WIP Stats
+	# st.write('Insert aging WIP stats')
+	# st.write('Insert table of WIP durations')
 
-			wip_run_chart = alt.Chart(chart_builder.get_run_df(), title="WIP Run Chart")
-			wip_line = wip_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
-				x='Date:T',
-				y=alt.Y('WIP:Q', title='WIP'),
-				tooltip=['Date', 'WIP']
-			).interactive()
+	# Horizontal Separator
+	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
+				unsafe_allow_html=True)
 
-			wip_limit = wip_run_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
-				y='WIPLimit:Q'
-			)
-			st.altair_chart(wip_line + wip_limit)
-			# TODO: Create WIP Run Stats
-			# st.write('Insert stats')
+	wip_run_chart = alt.Chart(chart_builder.get_run_df(), title="WIP Run Chart")
+	wip_line = wip_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
+		x=alt.X('Date:T', title='Date'),
+		y=alt.Y('WIP:Q', title='WIP'),
+		tooltip=['Date', 'WIP']
+	).interactive()
+	wip_limit = wip_run_chart.mark_rule(strokeDash=[12, 6], size=2).encode(
+		y='WIPLimit:Q'
+	)
+	label_wip = wip_run_chart.mark_text(align='right', baseline='bottom', dx=-20, color='black').encode(
+		alt.X('Date:T', aggregate='max'),
+		alt.Y('WIPLimit:Q'),
+		alt.Text('WIPLimit:Q')
+	)
+	st.altair_chart(wip_line + wip_limit + label_wip)
+	# TODO: Create WIP Run Stats
+	# st.write('Insert stats')
 
-			# Horizontal Separator
-			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
-						unsafe_allow_html=True)
+	# Horizontal Separator
+	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
+				unsafe_allow_html=True)
 
-			# =========================================
-			# Throughput Charts
-			# =========================================
-			throughput_hist_graph = alt.Chart(chart_builder.get_throughput_hist_df(), title="Throughput Histogram")
-			bar_graph = throughput_hist_graph.mark_bar(size=40).encode(
-				x=alt.X('Throughput:Q', title='Throughput'),
-				y='Count:Q',
-				tooltip=['Throughput', 'Count']
-			).interactive()
-			throughput_85_confidence = throughput_hist_graph.mark_rule(strokeDash=[12, 6], size=2).encode(
-				x='Throughput85:Q'
-			)
-			st.altair_chart(bar_graph + throughput_85_confidence)
-			# TODO: Create Throughput Run Stats
-			# st.write('Insert stats')
+	# =========================================
+	# Throughput Charts
+	# =========================================
+	throughput_hist_graph = alt.Chart(chart_builder.get_throughput_hist_df(), title="Throughput Histogram")
+	bar_graph = throughput_hist_graph.mark_bar(size=40).encode(
+		x=alt.X('Throughput:Q', title='Throughput'),
+		y=alt.Y('Count:Q', title='Count'),
+		tooltip=['Throughput', 'Count']
+	).interactive()
+	throughput_85_confidence = throughput_hist_graph.mark_rule(strokeDash=[12, 6], size=2, color='red').encode(
+		x='Throughput85:Q'
+	)
+	throughput_50_confidence = throughput_hist_graph.mark_rule(strokeDash=[12, 6], size=2, color='green').encode(
+		x='Throughput50:Q'
+	)
+	throughput_avg = throughput_hist_graph.mark_rule(strokeDash=[12, 6], size=2, color='black').encode(
+		x='ThroughputAvg:Q'
+	)
+	throughput_hist_label_85 = throughput_hist_graph.mark_text(align='right', baseline='top', dx=-20, color='red').encode(
+		alt.X('Throughput85:Q'),
+		alt.Y('Count:Q', aggregate='mean'),
+		alt.Text('Throughput85:Q')
+	)
+	throughput_hist_label_50 = throughput_hist_graph.mark_text(align='right', baseline='top', dx=-20,
+															   color='green').encode(
+		alt.X('Throughput50:Q'),
+		alt.Y('Count:Q', aggregate='mean'),
+		alt.Text('Throughput50:Q')
+	)
+	throughput_hist_label_avg = throughput_hist_graph.mark_text(align='right', baseline='top', dx=-20,
+															   color='black').encode(
+		alt.X('ThroughputAvg:Q'),
+		alt.Y('Count:Q', aggregate='mean'),
+		alt.Text('ThroughputAvg:Q')
+	)
+	st.altair_chart(bar_graph + throughput_85_confidence + throughput_50_confidence + throughput_avg +
+					throughput_hist_label_85 + throughput_hist_label_50 + throughput_hist_label_avg)
+	# TODO: Create Throughput Run Stats
+	# st.write('Insert stats')
 
-			# Horizontal Separator
-			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
-						unsafe_allow_html=True)
+	# Horizontal Separator
+	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
+				unsafe_allow_html=True)
 
-			st.header('Throughput Run Chart')
-			throughput_run_chart = alt.Chart(chart_builder.get_run_df(), title="Throughput Run Chart")
-			throughput_line = throughput_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
-				x='Date:T',
-				y='Throughput:Q',
-				tooltip=['Date', 'Throughput']
-			).interactive()
-			# TODO: Build in 85% horizontal line for Throughput
-			st.altair_chart(throughput_line)
-			# TODO: Create Throughput Run Stats
-			# st.write('Insert stats')
+	throughput_run_chart = alt.Chart(chart_builder.get_run_df(), title="Throughput Run Chart")
+	throughput_line = throughput_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
+		x='Date:T',
+		y='Throughput:Q',
+		tooltip=['Date', 'Throughput']
+	).interactive()
+	# TODO: Build in 85% horizontal line for Throughput
+	st.altair_chart(throughput_line)
+	# TODO: Create Throughput Run Stats
+	# st.write('Insert stats')
 
-			# Horizontal Separator
-			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
-						unsafe_allow_html=True)
+	# Horizontal Separator
+	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
+				unsafe_allow_html=True)
 
-			# =========================================
-			# Cycle Time Charts
-			# =========================================
-			cycle_time_hist_graph = alt.Chart(chart_builder.get_cycle_time_hist_df(), title="Cycle Time Histogram")
-			# , bin=alt.Bin(step=10)
-			bar_graph = cycle_time_hist_graph.mark_bar(size=4).encode(
-				x=alt.X('Age:Q', title='Age'),
-				y='Count:Q',
-				tooltip=['Age', 'Count']
-			)
-			cycle_time_85_confidence_x = cycle_time_hist_graph.mark_rule(strokeDash=[12, 6], size=2).encode(
-				x='CycleTime85:Q'
-			)
-			st.altair_chart(bar_graph + cycle_time_85_confidence_x)
-			# TODO: Create Cycle Time Histogram Stats
-			# st.write('Insert stats')
+	# =========================================
+	# Cycle Time Charts
+	# =========================================
+	cycle_time_hist_graph = alt.Chart(chart_builder.get_cycle_time_hist_df(), title="Cycle Time Histogram")
+	bar_graph = cycle_time_hist_graph.mark_bar(size=4).encode(
+		x=alt.X('Age:Q', title='Age'),
+		y=alt.Y('Count:Q', title='Count'),
+		tooltip=['Age', 'Count']
+	).interactive()
+	cycle_time_85_confidence = cycle_time_hist_graph.mark_rule(strokeDash=[12, 6], size=2, color='red').encode(
+		x='CycleTime85:Q'
+	)
+	cycle_time_50_confidence = cycle_time_hist_graph.mark_rule(strokeDash=[12, 6], size=2, color='green').encode(
+		x='CycleTime50:Q'
+	)
+	cycle_time_avg = cycle_time_hist_graph.mark_rule(strokeDash=[12, 6], size=2, color='black').encode(
+		x='CycleTimeAvg:Q'
+	)
+	cycle_time_hist_label_85 = cycle_time_hist_graph.mark_text(align='right', baseline='top', dx=-20,
+															   color='red').encode(
+		alt.X('CycleTime85:Q'),
+		alt.Y('Count:Q', aggregate='mean'),
+		alt.Text('CycleTime85:Q')
+	)
+	cycle_time_hist_label_50 = cycle_time_hist_graph.mark_text(align='right', baseline='top', dx=-20,
+															   color='green').encode(
+		alt.X('CycleTime50:Q'),
+		alt.Y('Count:Q', aggregate='mean'),
+		alt.Text('CycleTime50:Q')
+	)
+	cycle_time_hist_label_avg = cycle_time_hist_graph.mark_text(align='right', baseline='top', dx=-20,
+																color='black').encode(
+		alt.X('CycleTimeAvg:Q'),
+		alt.Y('Count:Q', aggregate='mean'),
+		alt.Text('CycleTimeAvg:Q')
+	)
+	st.altair_chart(bar_graph + cycle_time_85_confidence + cycle_time_50_confidence + cycle_time_avg +
+					cycle_time_hist_label_85 + cycle_time_hist_label_50 + cycle_time_hist_label_avg)
+	# TODO: Create Cycle Time Histogram Stats
+	# st.write('Insert stats')
 
-			# Horizontal Separator
-			st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
-						unsafe_allow_html=True)
+	# Horizontal Separator
+	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
+				unsafe_allow_html=True)
 
-			cycle_scatter_chart = alt.Chart(chart_builder.get_cycle_time_scatter_df(), title="Cycle Time Scatterplot")
-			scatter_plot = cycle_scatter_chart.mark_circle(size=60).encode(
-				x=alt.X('Done_Date:T', title='Completed Date'),
-				y=alt.Y('Age:Q', title='Age'),
-				tooltip=['Name', 'Age', 'Done_Date']
-			).interactive()
-			cycle_time_85_confidence_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='red').encode(
-				y='CycleTime85:Q'
-			)
-			cycle_time_50_confidence_Y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='green').encode(
-				y='CycleTime50:Q'
-			)
-			cycle_time_average_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='black').encode(
-				y='CycleTimeAvg:Q'
-			)
-			label_85 = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='red').encode(
-				alt.X('Done_Date:T', aggregate='max'),
-				alt.Y('CycleTime85:Q'),
-				alt.Text('CycleTime85:Q')
-			)
-			label_50 = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='green').encode(
-				alt.X('Done_Date:T', aggregate='max'),
-				alt.Y('CycleTime50:Q'),
-				alt.Text('CycleTime50:Q')
-			)
-			label_avg = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='black').encode(
-				alt.X('Done_Date:T', aggregate='max'),
-				alt.Y('CycleTimeAvg:Q'),
-				alt.Text('CycleTimeAvg:Q')
-			)
-			st.altair_chart(scatter_plot + cycle_time_85_confidence_y + cycle_time_50_confidence_Y + cycle_time_average_y
-							+ label_85 + label_50 + label_avg,
-							use_container_width=True)
-			# TODO: Create Cycle Time Stats
-			# st.write('Insert stats')
+	cycle_scatter_chart = alt.Chart(chart_builder.get_cycle_time_scatter_df(), title="Cycle Time Scatterplot")
+	scatter_plot = cycle_scatter_chart.mark_circle(size=60).encode(
+		x=alt.X('Done_Date:T', title='Completed Date'),
+		y=alt.Y('Age:Q', title='Age'),
+		tooltip=['Name', 'Age', 'Done_Date']
+	).interactive()
+	cycle_time_85_confidence_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='red').encode(
+		y='CycleTime85:Q'
+	)
+	cycle_time_50_confidence_Y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='green').encode(
+		y='CycleTime50:Q'
+	)
+	cycle_time_average_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='black').encode(
+		y='CycleTimeAvg:Q'
+	)
+	label_85 = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='red').encode(
+		alt.X('Done_Date:T', aggregate='max'),
+		alt.Y('CycleTime85:Q'),
+		alt.Text('CycleTime85:Q')
+	)
+	label_50 = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='green').encode(
+		alt.X('Done_Date:T', aggregate='max'),
+		alt.Y('CycleTime50:Q'),
+		alt.Text('CycleTime50:Q')
+	)
+	label_avg = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='black').encode(
+		alt.X('Done_Date:T', aggregate='max'),
+		alt.Y('CycleTimeAvg:Q'),
+		alt.Text('CycleTimeAvg:Q')
+	)
+	st.altair_chart(scatter_plot + cycle_time_85_confidence_y + cycle_time_50_confidence_Y + cycle_time_average_y
+					+ label_85 + label_50 + label_avg,
+					use_container_width=True)
+	# TODO: Create Cycle Time Stats
+	# st.write('Insert stats')
