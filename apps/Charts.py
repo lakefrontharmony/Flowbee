@@ -46,17 +46,13 @@ def app():
 		st.write(chart_builder.get_errors())
 		return
 
-	st.header('Tips:')
-	st.write('Red dashed lines are the 85% confidence level')
-	st.write('Green dashed lines are the 50% confidence level (median of the data)')
-	st.write('Black dashed lines are the average of the data')
-	st.write('Click the "View Fullscreen" option to the right of any chart to see a larger representation')
+	st.write(build_helpful_tips())
 
 	# Horizontal Separator
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 				unsafe_allow_html=True)
 
-	st.write('Raw reference Data:')
+	st.header('Raw reference Data:')
 	st.write(chart_builder.get_clean_df())
 
 	# Horizontal Separator
@@ -66,14 +62,25 @@ def app():
 	# =========================================
 	# Flow and In-Progress Charts
 	# =========================================
-	cfd_chart = alt.Chart(chart_builder.get_cfd_df(), title='Cumulative Flow Diagram (CFD)').transform_fold(
-		chart_builder.get_date_column_list(), as_=['status', 'Count'])
+	# ===== CUMULATIVE FLOW DIAGRAM (CFD) =====
+	cfd_df = chart_builder.get_cfd_df()
+	cfd_columns = cfd_df.columns.tolist()
+	cfd_chart = alt.Chart(cfd_df, title='Cumulative Flow Diagram (CFD)').transform_fold(
+		chart_builder.get_date_column_list(), as_=['Status', 'Count'])
 	cfd_lines = cfd_chart.mark_area(opacity=0.75).encode(
 		x=alt.X('Date:T', title='Date'),
 		y=alt.Y('Count:Q', stack=None),
-		color='status:N'
+		color=alt.Color('Status:N', legend=alt.Legend(title='Categories')),
+		tooltip=cfd_columns
 	).interactive()
-	st.altair_chart(cfd_lines)
+
+	cfd_vectors = alt.Chart(chart_builder.get_cfd_vectors()).mark_line().encode(
+		x=alt.X('Date:T', title='Date'),
+		y=alt.Y('Count:Q', title='Trajectory'),
+		color=alt.Color('Status:N')
+	).interactive()
+	# stack these two charts vertically, not overlaid
+	st.altair_chart(cfd_lines & cfd_vectors)
 	# TODO: Enhance CFD Stats
 	# show_cfd_stats = st.checkbox('Show CFD Stats')
 	st.write(chart_builder.get_cfd_df())
@@ -82,12 +89,15 @@ def app():
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 				unsafe_allow_html=True)
 
-	aging_chart = alt.Chart(chart_builder.get_aging_wip_df(), title="Aging WIP")
+	# ===== AGING WIP =====
+	aging_df = chart_builder.get_aging_wip_df()
+	aging_columns = aging_df.columns.tolist()
+	aging_chart = alt.Chart(aging_df, title="Aging WIP")
 	aging_wip = aging_chart.mark_circle(size=60).encode(
 		x=alt.X('Status', title='Status'),
 		y=alt.Y('Age', title='Age'),
 		color='Status',
-		tooltip=['Name', 'Status', 'Age']
+		tooltip=aging_columns
 	).interactive()
 	cycle_time_85_confidence_y = aging_chart.mark_rule(strokeDash=[12, 6], size=2, color='red').encode(
 		y='CycleTime85:Q'
@@ -122,6 +132,7 @@ def app():
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 				unsafe_allow_html=True)
 
+	# ===== WIP RUN CHART =====
 	wip_run_chart = alt.Chart(chart_builder.get_run_df(), title="WIP Run Chart")
 	wip_line = wip_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
 		x=alt.X('Date:T', title='Date'),
@@ -130,7 +141,7 @@ def app():
 	).interactive()
 	average_wip = wip_run_chart.mark_line(color='black').transform_window(
 		rolling_mean='mean(WIP)',
-		frame=[0, 100],
+		frame=[-30, 30],
 		groupby=['WIPLimit']
 	).encode(
 		x='Date:T',
@@ -155,6 +166,7 @@ def app():
 	# =========================================
 	# Throughput Charts
 	# =========================================
+	# ===== THROUGHPUT HISTOGRAM =====
 	throughput_hist_graph = alt.Chart(chart_builder.get_throughput_hist_df(), title="Throughput Histogram")
 	bar_graph = throughput_hist_graph.mark_bar(size=40).encode(
 		x=alt.X('Throughput:Q', title='Throughput'),
@@ -196,6 +208,7 @@ def app():
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 				unsafe_allow_html=True)
 
+	# ===== THROUGHPUT RUN CHART =====
 	throughput_run_chart = alt.Chart(chart_builder.get_run_df(), title="Throughput Run Chart")
 	throughput_line = throughput_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
 		x='Date:T',
@@ -214,6 +227,7 @@ def app():
 	# =========================================
 	# Cycle Time Charts
 	# =========================================
+	# ===== CYCLE TIME HISTOGRAM =====
 	cycle_time_hist_graph = alt.Chart(chart_builder.get_cycle_time_hist_df(), title="Cycle Time Histogram")
 	bar_graph = cycle_time_hist_graph.mark_bar(size=4).encode(
 		x=alt.X('Age:Q', title='Age'),
@@ -256,6 +270,7 @@ def app():
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """,
 				unsafe_allow_html=True)
 
+	# ===== CYCLE TIME SCATTERPLOT =====
 	cycle_scatter_chart = alt.Chart(chart_builder.get_cycle_time_scatter_df(), title="Cycle Time Scatterplot")
 	scatter_plot = cycle_scatter_chart.mark_circle(size=60).encode(
 		x=alt.X('Done_Date:T', title='Completed Date'),
@@ -291,3 +306,10 @@ def app():
 					use_container_width=True)
 	# TODO: Enhance Cycle Time Stats
 	st.write(chart_builder.get_cycle_time_scatter_df())
+
+def build_helpful_tips():
+	tips_list = [['Red dashed lines = 85% confidence level'], ['Green dashed lines = 50% confidence level'],
+				 ['Black dashed lines = Average of data'],
+				 ['Click the "View Full screen" arrows at the right side of any chart to see it in full-screen'],
+				 ['Dataframes have been included below charts to show you the raw data']]
+	return pd.DataFrame(tips_list, columns=['Tips'])

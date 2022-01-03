@@ -20,6 +20,7 @@ class ChartBuilderClass:
 		self.completed_items_df = None
 		self.dates_df = None
 		self.cfd_df = None
+		self.cfd_vectors = None
 		self.aging_wip_df = None
 		self.run_df = None
 		self.throughput_hist_df = None
@@ -55,6 +56,7 @@ class ChartBuilderClass:
 
 	def build_charts(self):
 		self.build_cfd_df()
+		self.build_cfd_vectors()
 		self.build_aging_wip_df()
 		self.build_run_df()
 		self.build_throughput_histogram_df()
@@ -71,6 +73,14 @@ class ChartBuilderClass:
 	def get_cfd_df(self):
 		return self.cfd_df
 
+	# Unused for now
+	def melt_cfd_df_for_charting(self):
+		return_df = self.cfd_df.melt(id_vars='Date', value_vars=self.date_col_names)
+		return return_df
+
+	def get_cfd_vectors(self):
+		return self.cfd_vectors
+
 	def get_date_column_list(self):
 		return self.date_col_names
 
@@ -79,10 +89,6 @@ class ChartBuilderClass:
 
 	def get_run_df(self):
 		return self.run_df
-
-	def melt_cfd_df_for_charting(self):
-		return_df = self.cfd_df.melt(id_vars='Date', value_vars=self.date_col_names)
-		return return_df
 
 	def get_throughput_hist_df(self):
 		return self.throughput_hist_df
@@ -193,14 +199,17 @@ class ChartBuilderClass:
 		self.charts_going_good = True
 
 	def build_cfd_vectors(self):
-		# build a dataframe with one column of status, one column of dates, and one column of beginning/ending values.
-		# make it so that it follows this pattern:
-		# status | date | value
-		# Ready | 2021-01-01 | 1
-		# Ready | 2022-01-01 | 45
-		# In Prog | 2021-01-01 | 0
-		# In Prog | 2022-01-01 | 30
-		pass
+		vector_array = []
+		for col_name in self.date_col_names:
+			start_location = self.cfd_df.loc[self.cfd_df[col_name] > 0].idxmin()
+			start_date = self.cfd_df['Date'].loc[start_location[0]]
+			start_count = self.cfd_df[col_name].loc[start_location[0]]
+			end_date = self.cfd_df['Date'].iloc[-1]
+			end_count = self.cfd_df[col_name].iloc[-1]
+			vector_array.append([col_name, start_date, start_count])
+			vector_array.append([col_name, end_date, end_count])
+
+		self.cfd_vectors = pd.DataFrame(vector_array, columns=['Status', 'Date', 'Count'])
 
 	# TODO: Can we rework this to not use 'for' loops?
 	def build_aging_wip_df(self):
