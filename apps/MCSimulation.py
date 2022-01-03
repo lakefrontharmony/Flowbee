@@ -23,37 +23,43 @@ def app():
         submit_button = mc_form.form_submit_button(label='Run Simulation')
 
     st.title('Monte Carlo Simulations')
-    st.write('Complete the information on the sidebar to see results of a Monte Carlo simulation')
 
-    if Globals.INPUT_CSV_DATAFRAME is not None:
-        if submit_button:
-            simulator = SimulationCalcClass(hist_duration, start_col, end_col, str(sim_start_date), str(sim_end_date), items_to_complete)
-            simulator.prep_for_simulation()
-            if not Globals.GOOD_FOR_GO:
-                return
-            simulator.run_mc_simulations(Globals.NUM_SIMULATION_ITERATIONS)
+    if Globals.INPUT_CSV_DATAFRAME is None:
+        st.write('Please select an input csv file to continue.')
+        return
+    if not submit_button:
+        st.write('Complete the information on the sidebar to see results of a Monte Carlo simulation')
+        return
 
-            st.write(Globals.WORKING_PERCENTILES)
-            st.header('Assumptions made during simulation')
-            st.write(simulator.get_monte_carlo_assumptions())
+    simulator = SimulationCalcClass(hist_duration, start_col, end_col, str(sim_start_date), str(sim_end_date), items_to_complete)
+    simulator.prep_for_simulation()
+    if not Globals.GOOD_FOR_GO:
+        return
+    simulator.run_mc_simulations(Globals.NUM_SIMULATION_ITERATIONS)
 
-            st.header('General Statistics of Simulations')
-            st.write(Globals.MC_SIMULATION_STATS)
+    st.write(Globals.WORKING_PERCENTILES)
+    st.header('Assumptions made during simulation')
+    st.write(simulator.get_monte_carlo_assumptions())
 
-            # Display "How Many" data
-            st.header(f'How Many items will we complete by {sim_end_date}?')
-            st.write('This grid helps you state, "With xx% confidence I can say we will complete "yy" items"')
-            st.write(Globals.HOW_MANY_PERCENTILES)
-            # Results dataframe
-            st.bar_chart(build_how_many_disp_df())
+    st.header('General Statistics of Simulations')
+    st.write(Globals.MC_SIMULATION_STATS)
 
-            # Display "When" data
-            st.header(f'When will we finish {items_to_complete} items?')
-            st.write(f'This grid helps you state, '
-                     f'"With xx% confidence I can say we will complete {items_to_complete} items by yyyy/mm/dd"')
-            st.write(Globals.WHEN_PERCENTILES)
-            # Results dataframe
-            st.bar_chart(build_when_disp_df())
+    # Display "How Many" data
+    st.header(f'How Many items will we complete by {sim_end_date}?')
+    st.write(f'This grid helps you state, "After running {Globals.NUM_SIMULATION_ITERATIONS} simulations, '
+             f'XX or more items completed in YY% of cases."')
+    st.write(Globals.HOW_MANY_PERCENTILES)
+    # Results dataframe
+    st.bar_chart(build_how_many_disp_df())
+
+    # Display "When" data
+    st.header(f'When will we finish {items_to_complete} items?')
+    st.write(f'This grid helps you state, '
+             f'"After running {Globals.NUM_SIMULATION_ITERATIONS} simulations, '
+             f'{items_to_complete} or more items completed by yyyy-mm-dd"')
+    st.write(Globals.WHEN_PERCENTILES)
+    # Results dataframe
+    st.bar_chart(build_when_disp_df())
 
 
 def build_how_many_disp_df():

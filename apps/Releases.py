@@ -7,10 +7,13 @@ import Globals
 
 
 def app():
+	st.title('Release Metrics')
 	if Globals.INPUT_CSV_DATAFRAME is not None:
 		pipeline_info_file = st.sidebar.file_uploader("Select Pipeline Info JSON file", type='json')
+	else:
+		st.write('Please select an input csv file to continue.')
+		return
 
-	st.title('Release Metrics')
 	st.write('Complete the form on the sidebar to view results of release metrics.')
 
 	if pipeline_info_file is not None:

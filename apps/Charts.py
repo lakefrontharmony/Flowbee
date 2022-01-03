@@ -15,7 +15,7 @@ def app():
 		start_col = chart_form.selectbox('Choose Start Status', Globals.INPUT_CSV_DATAFRAME.columns)
 		end_col = chart_form.selectbox('Choose End Status', Globals.INPUT_CSV_DATAFRAME.columns)
 		name_col = chart_form.selectbox('Choose Column Containing Item Names', Globals.INPUT_CSV_DATAFRAME.columns)
-		daily_wip_limit = chart_form.number_input('Daily WIP limit', min_value=1, max_value=30, value=10,
+		daily_wip_limit = chart_form.number_input('Daily WIP limit', min_value=1, max_value=100, value=10,
 												  step=1)
 		use_start_date = chart_form.checkbox('Check to specify a starting date below:')
 		chart_start_date = chart_form.date_input('Data Start Date', value=date.today() - timedelta(days=90))
@@ -74,13 +74,14 @@ def app():
 		tooltip=cfd_columns
 	).interactive()
 
-	cfd_vectors = alt.Chart(chart_builder.get_cfd_vectors()).mark_line().encode(
+	cfd_vectors = alt.Chart(chart_builder.get_cfd_vectors(), title='CFD Status Trajectory').mark_line().encode(
 		x=alt.X('Date:T', title='Date'),
 		y=alt.Y('Count:Q', title='Trajectory'),
 		color=alt.Color('Status:N')
 	).interactive()
 	# stack these two charts vertically, not overlaid
-	st.altair_chart(cfd_lines & cfd_vectors)
+	st.altair_chart(cfd_lines)
+	st.altair_chart(cfd_vectors)
 	# TODO: Enhance CFD Stats
 	# show_cfd_stats = st.checkbox('Show CFD Stats')
 	st.write(chart_builder.get_cfd_df())
@@ -271,11 +272,13 @@ def app():
 				unsafe_allow_html=True)
 
 	# ===== CYCLE TIME SCATTERPLOT =====
-	cycle_scatter_chart = alt.Chart(chart_builder.get_cycle_time_scatter_df(), title="Cycle Time Scatterplot")
+	scatter_df = chart_builder.get_cycle_time_scatter_df()
+	scatter_columns = scatter_df.columns.tolist()
+	cycle_scatter_chart = alt.Chart(scatter_df, title="Cycle Time Scatterplot")
 	scatter_plot = cycle_scatter_chart.mark_circle(size=60).encode(
 		x=alt.X('Done_Date:T', title='Completed Date'),
 		y=alt.Y('Age:Q', title='Age'),
-		tooltip=['Name', 'Age', 'Done_Date']
+		tooltip=scatter_columns
 	).interactive()
 	cycle_time_85_confidence_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='red').encode(
 		y='CycleTime85:Q'

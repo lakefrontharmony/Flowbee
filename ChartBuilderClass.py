@@ -111,7 +111,7 @@ class ChartBuilderClass:
 		if 'Cancelled' in Globals.INPUT_CSV_DATAFRAME:
 			assumptions.append(['Cancelled items were excluded from calculations.'])
 		else:
-			assumptions.append(['No cancelled column was found. (Column must be titled "Cancelled."'])
+			assumptions.append(['No cancelled column was found. (Column must be titled "Cancelled"'])
 		assumptions_df = pd.DataFrame(assumptions, columns=['Assumption'])
 		return assumptions_df
 

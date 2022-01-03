@@ -8,6 +8,7 @@ import Globals
 app = MultiApp()
 
 st.set_page_config(layout='wide')
+Globals.INPUT_CSV_DATAFRAME = None
 uploaded_file = st.sidebar.file_uploader("Select Date File", type='csv')
 if uploaded_file is not None:
 	Globals.INPUT_CSV_DATAFRAME = pd.read_csv(uploaded_file)

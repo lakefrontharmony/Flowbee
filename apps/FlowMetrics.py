@@ -7,7 +7,7 @@ import Globals
 
 
 def app():
-
+    st.title('Flow Metrics')
     if Globals.INPUT_CSV_DATAFRAME is not None:
         sprint_info_file = st.sidebar.file_uploader("Select Sprint Info File", type='csv')
         if sprint_info_file is not None:
@@ -30,27 +30,31 @@ def app():
                                                         step=1)
             # ToDo: Stop submission if the start and end sprint are the same column name. Causes errors downstream.
             submit_button = flow_form.form_submit_button(label='Calc My Flow')
+        else:
+            st.write('Please select a Sprint Info File input csv to continue.')
+            return
+    else:
+        st.write('Please select an input csv file to continue.')
+        return
 
-    st.title('Flow Metrics')
-    st.write('Complete the form on the sidebar to view results of flow metrics.')
+    if not submit_button:
+        st.write('Complete the form on the sidebar to view results of flow metrics.')
+        return
 
-    if Globals.INPUT_CSV_DATAFRAME is not None:
-        if sprint_info_file is not None:
-            if submit_button:
-                calculator = FlowCalcClass(start_col, end_col, start_sprint, end_sprint, daily_wip_limit, names_field, categories_field, False, '')
-                calculator.prep_for_metrics()
-                if not Globals.GOOD_FOR_GO:
-                    st.write(calculator.get_error_msgs())
-                    return
-                calculator.run_flow_metrics()
+    calculator = FlowCalcClass(start_col, end_col, start_sprint, end_sprint, daily_wip_limit, names_field, categories_field, False, '')
+    calculator.prep_for_metrics()
+    if not Globals.GOOD_FOR_GO:
+        st.write(calculator.get_error_msgs())
+        return
+    calculator.run_flow_metrics()
 
-                st.header('Assumptions made during calculations')
-                st.write(calculator.get_flow_metric_assumptions())
-                st.header('General Statistics of Metrics')
-                st.write(Globals.FLOW_METRIC_STATS)
-                st.header('Completed Items')
-                st.write(calculator.get_completed_item_names())
-                st.header('Flow Metric Results')
-                st.write(Globals.FLOW_METRIC_RESULTS)
-                st.header('Categorical Results')
-                st.write(Globals.FLOW_METRIC_CATEGORY_RESULTS)
+    st.header('Assumptions made during calculations')
+    st.write(calculator.get_flow_metric_assumptions())
+    st.header('General Statistics of Metrics')
+    st.write(Globals.FLOW_METRIC_STATS)
+    st.header('Completed Items')
+    st.write(calculator.get_completed_item_names())
+    st.header('Flow Metric Results')
+    st.write(Globals.FLOW_METRIC_RESULTS)
+    st.header('Categorical Results')
+    st.write(Globals.FLOW_METRIC_CATEGORY_RESULTS)

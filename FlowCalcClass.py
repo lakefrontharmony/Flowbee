@@ -70,13 +70,9 @@ class FlowCalcClass:
 
 	def run_flow_metrics(self):
 		avg_lead_time = self.calculate_average_lead_time()
-		print('Done running Avg Lead Time')
 		avg_throughput = self.calculate_average_throughput()
-		print('Done running Avg Throughput')
 		avg_wip = self.calculate_average_wip()
-		print('Done running Avg WIP')
 		wip_violations = self.calculate_wip_violations()
-		print('Done running WIP Violations')
 		flow_data = [[Globals.FLOW_METRIC_LEAD_TIME_KEY, avg_lead_time],
 					 [Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY, avg_throughput],
 					 [Globals.FLOW_METRIC_AVG_WIP_KEY, avg_wip],
@@ -86,7 +82,6 @@ class FlowCalcClass:
 
 		if self.calcs_going_good & self.category_calc_toggle:
 			self.calculate_category_metrics()
-			print('Done running category metrics')
 		if self.parent_toggle:
 			self.calculate_average_parent_wip()
 			# TODO: Add print here once you build parent WIP calcs
