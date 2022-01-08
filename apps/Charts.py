@@ -63,6 +63,17 @@ def app():
 	# Flow and In-Progress Charts
 	# =========================================
 	# ===== CUMULATIVE FLOW DIAGRAM (CFD) =====
+	st.header("How do I use this chart?")
+	st.write("""
+		The Cumulative Flow Diagram shows how many items have entered each phase of a process. The slope of the line
+		shows you how rapidly you are taking in work and completing it. 
+		The thickness of each section tells how much work is in progress on any given date. 
+		Look horizontally to see how long the approximate average time is to move from one phase to another. 
+		Look vertically to see how many items were in progress between two phases on any given day. \n 
+		To read more on how Cumulative Flow Diagrams can be utilized, check out
+		"Actionable Agile Metrics for Predictability" by Dan Vacanti. A summary of the CFD section can be found here:
+		https://tameflow.com/blog/2015-03-12/actionable-agile-metrics-review-part-4/
+	""")
 	cfd_df = chart_builder.get_cfd_df()
 	cfd_columns = cfd_df.columns.tolist()
 	cfd_chart = alt.Chart(cfd_df, title='Cumulative Flow Diagram (CFD)').transform_fold(
@@ -91,8 +102,25 @@ def app():
 				unsafe_allow_html=True)
 
 	# ===== AGING WIP =====
+	st.header("How do I use this chart?")
+	st.write("""
+		This Aging WIP diagram shows the 85th (red) and 50th (green) percentiles for completed items, 
+		as well as the age of all In Progress items. 
+		Use this to gauge if the work currently in progress is on track to complete in a timely manner, 
+		or if it may be headed towards a long cycle time. 
+		The older an item gets, the higher it's probability that it will continue to get older. 
+		Hover over any dot on the chart to see more details of where the time has been spent for each item.
+		""")
 	aging_df = chart_builder.get_aging_wip_df()
 	aging_columns = aging_df.columns.tolist()
+
+	cycle_time_85_confidence = int(aging_df.loc[0, 'CycleTime85'])
+	cycle_time_50_confidence = int(aging_df.loc[0, 'CycleTime50'])
+	st.write(f'Some interesting facts: \n'
+			 f'85% of items have finished within {cycle_time_85_confidence} days.\n'
+			 f'If an item reaches {cycle_time_50_confidence} days old, it now has a 30% chance of being longer than '
+			 f'{cycle_time_85_confidence} total days to delivery. Does that cause any concern?')
+
 	aging_chart = alt.Chart(aging_df, title="Aging WIP")
 	aging_wip = aging_chart.mark_circle(size=60).encode(
 		x=alt.X('Status', title='Status'),
@@ -134,6 +162,14 @@ def app():
 				unsafe_allow_html=True)
 
 	# ===== WIP RUN CHART =====
+	st.header("How do I use this chart?")
+	st.write("""
+		The WIP Run Chart shows the number of items in progress each day. \n
+		- Is the number of items in progress consistent, or moving up/down?\n
+		- How many days are the items above the WIP limit (blue line)?\n
+		- The less adherence to a WIP limit, the less predictable delivery can be.
+		""")
+
 	wip_run_chart = alt.Chart(chart_builder.get_run_df(), title="WIP Run Chart")
 	wip_line = wip_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
 		x=alt.X('Date:T', title='Date'),
@@ -168,6 +204,14 @@ def app():
 	# Throughput Charts
 	# =========================================
 	# ===== THROUGHPUT HISTOGRAM =====
+	st.header("How do I use this chart?")
+	st.write("""
+		The Throughput Histogram is a representation of how many times a particular number of items were completed 
+		on a single day. One reason a histogram is helpful is that it shows the distribution of throughput for 
+		forecast modeling (use the Monte Carlo option at the top of this page).\n
+		- Do you see any trends in the number of items that can be delivered in one day?\n
+		- Do you think that should be higher or lower?
+		""")
 	throughput_hist_graph = alt.Chart(chart_builder.get_throughput_hist_df(), title="Throughput Histogram")
 	bar_graph = throughput_hist_graph.mark_bar(size=40).encode(
 		x=alt.X('Throughput:Q', title='Throughput'),
@@ -210,6 +254,14 @@ def app():
 				unsafe_allow_html=True)
 
 	# ===== THROUGHPUT RUN CHART =====
+	st.header("How do I use this chart?")
+	st.write("""
+		The Throughput Run Chart shows how many items were completed each day within the given date range.
+		This is helpful to see possible trends in delivery.\n
+		- Do you see any trends for when you are delivering value?\n
+		- Are you batching work when it could be delivered more frequently?\n
+		- Are there any gaps in delivery that should be discussed?
+		""")
 	throughput_run_chart = alt.Chart(chart_builder.get_run_df(), title="Throughput Run Chart")
 	throughput_line = throughput_run_chart.mark_line(point=alt.OverlayMarkDef(color="red")).encode(
 		x='Date:T',
@@ -229,6 +281,14 @@ def app():
 	# Cycle Time Charts
 	# =========================================
 	# ===== CYCLE TIME HISTOGRAM =====
+	st.header("How do I use this chart?")
+	st.write("""
+		The Cycle Time Histogram is a representation of how many times items have had a particular cycle time 
+		when completed. One reason a histogram is helpful is that it shows the frequency of different 
+		cycle times for forecast modeling (use the Monte Carlo option at the top of this page).\n
+		- Do you see any trends in cycle time of items?\n
+		- What would it take to make these cycle times lower?
+		""")
 	cycle_time_hist_graph = alt.Chart(chart_builder.get_cycle_time_hist_df(), title="Cycle Time Histogram")
 	bar_graph = cycle_time_hist_graph.mark_bar(size=4).encode(
 		x=alt.X('Age:Q', title='Age'),
@@ -272,6 +332,17 @@ def app():
 				unsafe_allow_html=True)
 
 	# ===== CYCLE TIME SCATTERPLOT =====
+	st.header("How do I use this chart?")
+	st.write("""
+		The Cycle Time Scatterplot is a visual representation of cycle time for items that completed on any given day.
+		The red line represents the Cycle Time of 85% of items. 
+		The green line represents the Cycle Time of 50% of items.
+		The black line represents the average Cycle Time of all completed items.\n
+		- Do you see any outliers with long Cycle Time which should be discussed?\n
+		- Do you see any trends or shapes with the delivery of items (ex. an upwards ramp indicates that the Cycle Time
+		is slowly getting longer as you progress through time.)\n
+		- Are there any gaps in delivery that should be discussed?
+		""")
 	scatter_df = chart_builder.get_cycle_time_scatter_df()
 	scatter_columns = scatter_df.columns.tolist()
 	cycle_scatter_chart = alt.Chart(scatter_df, title="Cycle Time Scatterplot")
