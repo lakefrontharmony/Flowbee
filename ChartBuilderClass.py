@@ -1,17 +1,15 @@
 import pandas as pd
-import numpy as np
 import Globals
-from datetime import datetime, date, timedelta
+from datetime import datetime
 
 
 class ChartBuilderClass:
 	def __init__(self, st_col, end_col, name_col, use_start_date, chart_st, wip_limit):
-		self.start_date = chart_st
+		self.start_date = datetime.strptime(chart_st, '%Y-%m-%d')
 		self.start_col = st_col
 		self.end_col = end_col
 		self.name_col = str(name_col).replace(' ', '')
 		self.use_start_date = use_start_date
-		self.chart_start = datetime.strptime(chart_st, '%Y-%m-%d')
 		self.wip_limit = wip_limit
 
 		self.prep_going_good = True

@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 from FlowCalcClass import FlowCalcClass
 
 import Globals
