@@ -105,11 +105,12 @@ class ChartBuilderClass:
 	# =========================================
 	def get_assumptions(self):
 		assumptions = [['Phases of your flow were sequential columns between the specified start/end columns.'],
-					   ['Flow phase columns only contained valid dates and there were no gaps between dates.']]
+					   ['Flow phase columns only contained valid dates.'],
+					   ['Any gaps in dates between phases were filled from the next valid date.']]
 		if 'Cancelled' in Globals.INPUT_CSV_DATAFRAME:
 			assumptions.append(['Cancelled items were excluded from calculations.'])
 		else:
-			assumptions.append(['No cancelled column was found. (Column must be titled "Cancelled"'])
+			assumptions.append(['No cancelled column was found. (Column must be titled "Cancelled")'])
 		assumptions_df = pd.DataFrame(assumptions, columns=['Assumption'])
 		return assumptions_df
 
@@ -127,7 +128,7 @@ class ChartBuilderClass:
 			self.clean_df = self.clean_df.loc[cancelled_mask]
 
 		start_bool_series = pd.notnull(self.clean_df[self.start_col])
-		self.clean_df = self.clean_df[start_bool_series]
+		self.clean_df = self.clean_df.loc[start_bool_series]
 
 		if self.clean_df is None:
 			self.prep_going_good = False
@@ -135,11 +136,14 @@ class ChartBuilderClass:
 							   'Verify there are valid dates in input file')
 			return
 
+		# give a fresh index to the dataframe
+		self.clean_df.reset_index(drop=True, inplace=True)
+
 		# convert date columns to datetime elements
 		self.clean_df.loc[:, self.start_col:self.end_col] = \
 			self.clean_df.loc[:, self.start_col:self.end_col].apply(pd.to_datetime, errors='coerce')
-		# TODO: Add in a search with 'isnull()' to find any rows that may have invalid or missing dates.
 		test_df = self.clean_df.loc[:, self.start_col: self.end_col]
+		test_df = self.fillna_dates(test_df)
 		test_df.columns = \
 			[f'{i}_{x}' for i, x in enumerate(test_df.columns, 1)]
 		self.start_col = test_df.columns[0]
@@ -234,7 +238,6 @@ class ChartBuilderClass:
 		self.aging_wip_df['CycleTime85'] = self.cycle_time_85_confidence
 		self.aging_wip_df['CycleTime50'] = self.cycle_time_50_confidence
 		self.aging_wip_df['CycleTimeAvg'] = self.cycle_time_average
-
 		self.charts_going_good = True
 
 	def build_run_df(self):
@@ -289,3 +292,7 @@ class ChartBuilderClass:
 		test_date = in_row['Date']
 		date_mask = (self.clean_df[self.end_col] == test_date)
 		return len(self.clean_df.loc[date_mask].index)
+
+	def fillna_dates(self, in_df: pd.DataFrame) -> pd.DataFrame:
+		temp_df = in_df.fillna(axis=1, method='bfill')
+		return temp_df
