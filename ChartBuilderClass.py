@@ -220,8 +220,8 @@ class ChartBuilderClass:
 		# (this makes the date math work in the reverse cycle through the date_col_names list)
 		temp_clean_df = self.clean_df.copy()
 		temp_clean_df.fillna(datetime.today(), inplace=True)
-		self.aging_wip_df = pd.DataFrame({'Name': self.clean_df[self.name_col], 'Age': 0, 'Status': '', 'Done_Date': pd.NaT,
-										  'Start Date': self.clean_df[self.start_col]})
+		self.aging_wip_df = pd.DataFrame({'Name': self.clean_df[self.name_col], 'Age': 0, 'Status': '',
+										  'Start Date': self.clean_df[self.start_col], 'Done_Date': pd.NaT})
 
 		for col_name in self.date_col_names:
 			self.aging_wip_df[col_name] = 0
