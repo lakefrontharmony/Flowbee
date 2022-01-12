@@ -136,9 +136,6 @@ class ChartBuilderClass:
 							   'Verify there are valid dates in input file')
 			return
 
-		# give a fresh index to the dataframe
-		self.clean_df.reset_index(drop=True, inplace=True)
-
 		# convert date columns to datetime elements
 		self.clean_df.loc[:, self.start_col:self.end_col] = \
 			self.clean_df.loc[:, self.start_col:self.end_col].apply(pd.to_datetime, errors='coerce')
@@ -153,11 +150,15 @@ class ChartBuilderClass:
 		self.clean_df['WIPLimit'] = self.wip_limit
 
 		self.date_col_names = self.clean_df.loc[:, self.start_col: self.end_col].columns.tolist()
+		# give a fresh index to the dataframe
+		self.clean_df.reset_index(drop=True, inplace=True)
 		self.prep_going_good = True
 
 	def filter_clean_df_to_start_date(self):
 		include_mask = (pd.isnull(self.clean_df[self.end_col])) | (self.clean_df[self.end_col] >= self.start_date)
 		self.clean_df = self.clean_df.loc[include_mask]
+		# give a fresh index to the dataframe
+		self.clean_df.reset_index(drop=True, inplace=True)
 
 	def build_dates_df(self):
 		min_date = min(self.clean_df[self.start_col])
@@ -226,7 +227,6 @@ class ChartBuilderClass:
 			status_mask = pd.notnull(self.clean_df[col_name])
 			self.aging_wip_df['Status'].loc[status_mask] = col_name
 		prev_column = self.end_col
-		self.aging_wip_df[self.start_col] = 0
 
 		for col_name in reversed(self.date_col_names):
 			self.aging_wip_df[col_name] = (temp_clean_df[prev_column] - temp_clean_df[col_name]).dt.days
