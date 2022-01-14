@@ -1,30 +1,32 @@
 import streamlit as st
 from datetime import timedelta
 from SimulationCalcClass import SimulationCalcClass
-
 import Globals
 
 
 def app():
-    if Globals.INPUT_CSV_DATAFRAME is not None:
-        mc_form = st.sidebar.form('Monte Carlo Submit')
-        start_col = mc_form.selectbox('Choose Start Status', Globals.INPUT_CSV_DATAFRAME.columns)
-        end_col = mc_form.selectbox('Choose End Status', Globals.INPUT_CSV_DATAFRAME.columns)
-        hist_duration = mc_form.selectbox('Choose Historical Duration for Monte Carlo', list(Globals.HIST_TIMEFRAME.keys()))
-        sim_start_date = mc_form.date_input('Simulation Start Date', value=Globals.SIM_START_DATE)
-        sim_end_date = mc_form.date_input('Simulation End Date', value=Globals.SIM_END_DATE)
-        items_to_complete = mc_form.number_input('How Many items to complete?', min_value=0, max_value=50, value=20,
-                                                    step=1)
-        Globals.NUM_SIMULATION_ITERATIONS = mc_form.number_input('How Many iterations to run?', min_value=1000, max_value=50000,
-                                                    value=10000,
-                                                    step=1000)
-        submit_button = mc_form.form_submit_button(label='Run Simulation')
-
     st.title('Monte Carlo Simulations')
 
-    if Globals.INPUT_CSV_DATAFRAME is None:
+    uploaded_file = st.sidebar.file_uploader("Select Date File", type='csv')
+    if uploaded_file is not None:
+        Globals.INPUT_CSV_DATAFRAME = Globals.build_date_csv_file(uploaded_file)
+    else:
         st.write('Please select an input csv file to continue.')
         return
+
+    mc_form = st.sidebar.form('Monte Carlo Submit')
+    start_col = mc_form.selectbox('Choose Start Status', Globals.INPUT_CSV_DATAFRAME.columns)
+    end_col = mc_form.selectbox('Choose End Status', Globals.INPUT_CSV_DATAFRAME.columns)
+    hist_duration = mc_form.selectbox('Choose Historical Duration for Monte Carlo', list(Globals.HIST_TIMEFRAME.keys()))
+    sim_start_date = mc_form.date_input('Simulation Start Date', value=Globals.SIM_START_DATE)
+    sim_end_date = mc_form.date_input('Simulation End Date', value=Globals.SIM_END_DATE)
+    items_to_complete = mc_form.number_input('How Many items to complete?', min_value=0, max_value=50, value=20,
+                                                step=1)
+    Globals.NUM_SIMULATION_ITERATIONS = mc_form.number_input('How Many iterations to run?', min_value=1000, max_value=50000,
+                                                value=10000,
+                                                step=1000)
+    submit_button = mc_form.form_submit_button(label='Run Simulation')
+
     if not submit_button:
         st.write('Complete the information on the sidebar to see results of a Monte Carlo simulation')
         return

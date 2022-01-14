@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import json
-import Globals
 
 
 def app():
@@ -10,8 +9,12 @@ def app():
 	pipeline_info_file = st.sidebar.file_uploader("Select Pipeline Info JSON file", type='json')
 	release_info_file = st.sidebar.file_uploader("Select Release Info UTF-8 CSV file", type='csv')
 
-	if pipeline_info_file is None | release_info_file is None:
-		st.write('Complete the form on the sidebar to view results of release metrics.')
+	if pipeline_info_file is None:
+		st.write('Please select a pipeline json file to continue.')
+		return
+
+	if release_info_file is None:
+		st.write('Please select a csv of release information')
 		return
 
 	json_file = json.load(pipeline_info_file)

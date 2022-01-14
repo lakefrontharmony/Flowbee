@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 import numpy as np
+import pandas as pd
 
 # shared variables for program
 INPUT_CSV_DATAFRAME = None
@@ -68,3 +69,9 @@ PERCENTILES_LIST = np.array([0.95,
 							 0.50])
 
 PIPELINE_JSON_DATAFRAME = None
+
+
+def build_date_csv_file(input_file_path) -> pd.DataFrame:
+	return_file = pd.read_csv(input_file_path)
+	return_file.columns = return_file.columns.str.replace(' ', '')
+	return return_file

@@ -5,6 +5,7 @@ from PIL import Image
 
 
 def app():
+	st.sidebar.header('Select an option from the dropdown to get started')
 	flowbee_pic = Image.open('Files/Flowbee-box.jpeg')
 	st.image(flowbee_pic, caption='The original Flowbee')
 	st.title('Instructions')

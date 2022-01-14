@@ -9,10 +9,6 @@ app = MultiApp()
 
 st.set_page_config(layout='wide')
 Globals.INPUT_CSV_DATAFRAME = None
-uploaded_file = st.sidebar.file_uploader("Select Date File", type='csv')
-if uploaded_file is not None:
-	Globals.INPUT_CSV_DATAFRAME = pd.read_csv(uploaded_file)
-	Globals.INPUT_CSV_DATAFRAME.columns = Globals.INPUT_CSV_DATAFRAME.columns.str.replace(' ', '')
 
 st.markdown("""
 # Flowbee Calculator
@@ -23,7 +19,7 @@ release metrics based on a json file and Jira Export csv file.
 app.add_app('Instructions', Instructions.app)
 app.add_app('Monte Carlo', MCSimulation.app)
 app.add_app('Flow Metrics', FlowMetrics.app)
-app.add_app('Release Metrics', Releases.app)
 app.add_app('Charts', Charts.app)
+app.add_app('Release Metrics', Releases.app)
 
 app.run()
