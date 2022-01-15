@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import json
+from ReleaseMetricCalcClass import ReleaseMetricCalcClass
 
 
 def app():
@@ -14,12 +14,9 @@ def app():
 		return
 
 	if release_info_file is None:
-		st.write('Please select a csv of release information')
+		st.write('Please select a UTF-8 CSV file of release information')
 		return
 
-	json_file = json.load(pipeline_info_file)
-	df_1 = pd.json_normalize(json_file)
-	df_2 = pd.json_normalize(df_1.iat[0, 0])
-	found_entry = df_2[(df_2['slug'] == 'odm-withdrawals') & (df_2['statusMessage'] == 'Available')]
-	st.write(found_entry.name)
-	#st.json(json_file)
+	json_calculator = ReleaseMetricCalcClass()
+	json_calculator.read_json_file(pipeline_info_file)
+	json_calculator.read_releases_csv_file(release_info_file)
