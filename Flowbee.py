@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 
 from multiapp import MultiApp
 from apps import Instructions, MCSimulation, FlowMetrics, Releases, Charts
@@ -12,8 +11,8 @@ Globals.INPUT_CSV_DATAFRAME = None
 
 st.markdown("""
 # Flowbee Calculator
-This is a calculator for agile metrics. It can run a Monte Carlo Simulation, Calculate standard Flow Metrics, and do
-release metrics based on a json file and Jira Export csv file.
+This is a calculator for agile metrics. It can run a Monte Carlo Simulation, calculate standard Flow Metrics, 
+show helpful charts for FLow Metrics, and calculate specific Release Metrics.
 """)
 
 app.add_app('Instructions', Instructions.app)

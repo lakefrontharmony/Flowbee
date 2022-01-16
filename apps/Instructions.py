@@ -1,14 +1,19 @@
 import streamlit as st
-import pandas as pd
-import json
 from PIL import Image
 
 
 def app():
-	st.sidebar.header('Select an option from the dropdown to get started')
+	st.sidebar.header('Select an option from the Navigation dropdown to get started')
 	flowbee_pic = Image.open('Files/Flowbee-box.jpeg')
 	st.image(flowbee_pic, caption='The original Flowbee')
 	st.title('Instructions')
+	st.write("""
+	1. Select an option from the Navigation dropdown above. \n
+	2. Upload the applicable files through the left-sidebar 
+	(each page will tell you what files it needs). \n
+	3. Fill out any necessary form and the results will display in the main screen. \n
+	This was designed to be very simple and let you get the context you need from the data.
+	""")
 	st.header('Will these metrics be applicable to me?')
 	st.write("""
 	Short answer: Yes. \n
@@ -34,25 +39,4 @@ def app():
 	an estimation. The "goodness" of the estimate depends on how badly the assumptions have been violated.
 	
 	* NOTE: Little's Law is not forecasting. For forecasting, please use the "Monte Carlo" option in this app.
-	""")
-
-	st.header('Date File Format Guidelines')
-	st.write("""
-	- Save file in UTF-8 CSV format
-	- Have one column for each phase in your Kanban flow
-	- Make the first row a header to name your columns
-	- Each phase column should contain only dates or blanks (for when an item has not yet reached that phase)
-	- Dates should be in YYYY-MM-DD format since they will be sorted for some functions
-	- To represent cancelled items:
-	1. Stop recording dates at the last phase where it reached
-	2. Include a column with header, "Cancelled" and enter "Yes" for each item which is cancelled
-	3. These will be excluded from many calculations in this script
-	- Additional columns (other than the  phase columns) can be included if you would like to do grouping in Flow Metric calculations
-	""")
-
-	st.header('Sprint Data File Format Guidelines')
-	st.write("""
-	- One row for each Sprint
-	- Each row should have the Sprint name, Start Date, and End Date as columns
-	- Dates should be in YYYY-MM-DD format since they will be sorted for display
 	""")
