@@ -23,6 +23,7 @@ def input_json_pipeline_file():
 def input_release_csv_file():
 	return open('Files/fix_versions_unit_test.csv')
 
+
 @pytest.fixture()
 def test_release_in_file():
 	return pd.DataFrame([['pipeline_num_1 1.0.56', '2022-01-15'],
@@ -32,6 +33,7 @@ def test_release_in_file():
 						 ['pipeline_num_6  1.23 6', '2022-01-02'],
 						 ['pipeline_num_7 1.2.3', '2021-12-31']],
 						columns=['Fix Version/s', 'Release Date'])
+
 
 @pytest.fixture()
 def test_release_cleaned_file():
@@ -45,6 +47,7 @@ def test_release_cleaned_file():
 						 ['pipeline_num_7', '2021-12-31']],
 						columns=['Fix Version/s', 'Release Date'])
 
+
 @pytest.fixture()
 def tested_release_against_pipeline_file():
 	# Same as the cleaned file, but with a True/False column.
@@ -57,6 +60,12 @@ def tested_release_against_pipeline_file():
 						 ['pipeline_num_6', '2022-01-02', 'True'],
 						 ['pipeline_num_7', '2021-12-31', 'False']],
 						columns=['Fix Version/s', 'Release Date', 'On Pipeline'])
+
+
+# TODO: Build results dataframe to display in streamlit
+@pytest.fixture()
+def results_dataframe():
+	pass
 
 
 ###################################
