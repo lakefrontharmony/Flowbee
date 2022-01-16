@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from FlowCalcClass import FlowCalcClass
-
 import Globals
 
 
@@ -12,7 +11,9 @@ def app():
     if uploaded_file is not None:
         Globals.INPUT_CSV_DATAFRAME = Globals.build_date_csv_file(uploaded_file)
     else:
-        st.write('Please select an input csv file to continue.')
+        st.write('Please select a UTF-8 CSV file with "Flow" data to continue.')
+        st.subheader('Expected format of CSV File:')
+        display_example_csv_dataframe()
         return
 
     sprint_info_file = st.sidebar.file_uploader("Select Sprint Info File", type='csv')
@@ -37,7 +38,9 @@ def app():
         # ToDo: Stop submission if the start and end sprint are the same column name. Causes errors downstream.
         submit_button = flow_form.form_submit_button(label='Calc My Flow')
     else:
-        st.write('Please select a Sprint Info File input csv to continue.')
+        st.write('Please select a UTF-8 CSV file with Sprint Data to continue.')
+        st.subheader('Expected format of CSV File:')
+        display_example_sprint_csv_dataframe()
         return
 
     if not submit_button:
@@ -61,3 +64,23 @@ def app():
     st.write(Globals.FLOW_METRIC_RESULTS)
     st.header('Categorical Results')
     st.write(Globals.FLOW_METRIC_CATEGORY_RESULTS)
+
+
+def display_example_csv_dataframe():
+    st.write('You can as many date columns as your process needs, but they must be sequential and grouped together '
+             '(no other columns between date columns).')
+    st.write('You can also add additional columns for grouping or naming')
+    example_df = pd.DataFrame([['Name of item', 'In Progress Date (YYYY-MM-DD)', 'Done Date (YYYY-MM-DD)',
+                                'Yes or Blank', 'Category Name'],
+                               ['Improve Sales', '2021-12-15', '2022-01-15', '', 'Strategic'],
+                               ['Decrease Call Return Time', '2021-06-20', '2021-07-15', 'Yes', 'Maintenance']],
+                              columns=['Name', 'In Progress', 'Done', 'Cancelled?', 'Grouping'])
+    st.write(example_df)
+
+
+def display_example_sprint_csv_dataframe():
+    example_df = pd.DataFrame([['Name of Sprint', 'YYYY-MM-DD', 'YYYY-MM-DD'],
+                               ['2201.1', '2022-01-19', '2022-02-01'],
+                               ['2201.2', '2022-02-02', '2022-02-15']],
+                              columns=['SprintName', 'StartDate', 'EndDate'])
+    st.write(example_df)

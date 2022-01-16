@@ -13,7 +13,9 @@ def app():
 	if uploaded_file is not None:
 		Globals.INPUT_CSV_DATAFRAME = Globals.build_date_csv_file(uploaded_file)
 	else:
-		st.write('Please select an input csv file to continue.')
+		st.write('Please select a UTF-8 CSV file with "Flow" data to continue.')
+		st.subheader('Expected format of CSV File:')
+		display_example_csv_dataframe()
 		return
 
 	chart_form = st.sidebar.form('Charts Form')
@@ -37,7 +39,8 @@ def app():
 	# =========================================
 	# Build Chart Data
 	# =========================================
-	chart_builder = ChartBuilderClass(start_col, end_col, name_col, use_start_date, str(chart_start_date), daily_wip_limit)
+	chart_builder = ChartBuilderClass(start_col, end_col, name_col, use_start_date, str(chart_start_date),
+									  daily_wip_limit)
 	chart_builder.prep_for_charting()
 	if not Globals.GOOD_FOR_GO:
 		st.write(chart_builder.get_errors())
@@ -114,6 +117,18 @@ def build_helpful_tips():
 				 ['Click the "View Full screen" arrows at the right side of any chart to see it in full-screen'],
 				 ['Dataframes have been included below charts to show you the raw data']]
 	return pd.DataFrame(tips_list, columns=['Tips'])
+
+
+def display_example_csv_dataframe():
+	st.write('You can as many date columns as your process needs, but they must be sequential and grouped together '
+			 '(no other columns between date columns).')
+	st.write('You can also add additional columns for grouping or naming')
+	example_df = pd.DataFrame([['Name of item', 'In Progress Date (YYYY-MM-DD)', 'Done Date (YYYY-MM-DD)',
+								'Yes or Blank', 'Category Name'],
+							   ['Improve Sales', '2021-12-15', '2022-01-15', '', 'Strategic'],
+							   ['Decrease Call Return Time', '2021-06-20', '2021-07-15', 'Yes', 'Maintenance']],
+							  columns=['Name', 'In Progress', 'Done', 'Cancelled?', 'Grouping'])
+	st.write(example_df)
 
 
 def build_cfd_chart(chart_builder: ChartBuilderClass):

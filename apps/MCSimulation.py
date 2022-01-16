@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from datetime import timedelta
 from SimulationCalcClass import SimulationCalcClass
 import Globals
@@ -11,7 +12,9 @@ def app():
     if uploaded_file is not None:
         Globals.INPUT_CSV_DATAFRAME = Globals.build_date_csv_file(uploaded_file)
     else:
-        st.write('Please select an input csv file to continue.')
+        st.write('Please select a UTF-8 CSV file with "Flow" data to continue.')
+        st.subheader('Expected format of CSV File:')
+        display_example_csv_dataframe()
         return
 
     mc_form = st.sidebar.form('Monte Carlo Submit')
@@ -78,3 +81,15 @@ def build_when_disp_df():
     # Convert the End_date to an index of the df and then drop the 'End_date' column
     when_results = when_results.set_index(when_results['End_date'])
     return when_results.drop(['End_date'], axis=1)
+
+
+def display_example_csv_dataframe():
+    st.write('You can as many date columns as your process needs, but they must be sequential and grouped together '
+             '(no other columns between date columns).')
+    st.write('You can also add additional columns for grouping or naming')
+    example_df = pd.DataFrame([['Name of item', 'In Progress Date (YYYY-MM-DD)', 'Done Date (YYYY-MM-DD)',
+                                'Yes or Blank', 'Category Name'],
+                               ['Improve Sales', '2021-12-15', '2022-01-15', '', 'Strategic'],
+                               ['Decrease Call Return Time', '2021-06-20', '2021-07-15', 'Yes', 'Maintenance']],
+                              columns=['Name', 'In Progress', 'Done', 'Cancelled?', 'Grouping'])
+    st.write(example_df)
