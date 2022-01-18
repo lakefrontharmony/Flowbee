@@ -1,11 +1,11 @@
 import pandas as pd
 import Globals
-from datetime import datetime
+from datetime import datetime, date
 
 
 class ChartBuilderClass:
 	def __init__(self, st_col, end_col, name_col, use_start_date, chart_st, wip_limit):
-		self.start_date = datetime.strptime(chart_st, '%Y-%m-%d')
+		self.start_date = datetime.strptime(chart_st, '%Y-%m-%d').date()
 		self.start_col = st_col
 		self.end_col = end_col
 		self.name_col = str(name_col).replace(' ', '')
@@ -69,7 +69,9 @@ class ChartBuilderClass:
 		return self.clean_df
 
 	def get_cfd_df(self):
-		return self.cfd_df
+		return_df = self.cfd_df.copy()
+		return_df['Date'] = return_df['Date'].dt.date
+		return return_df
 
 	# Unused for now
 	def melt_cfd_df_for_charting(self):
@@ -83,10 +85,14 @@ class ChartBuilderClass:
 		return self.date_col_names
 
 	def get_aging_wip_df(self):
-		return self.aging_wip_df
+		return_df = self.aging_wip_df.copy()
+		return_df['Done_Date'] = return_df['Done_Date'].dt.date
+		return return_df
 
 	def get_run_df(self):
-		return self.run_df
+		return_df = self.run_df.copy()
+		return_df['Date'] = return_df['Date'].dt.date
+		return return_df
 
 	def get_throughput_hist_df(self):
 		return self.throughput_hist_df
@@ -95,7 +101,9 @@ class ChartBuilderClass:
 		return self.cycle_time_hist_df
 
 	def get_cycle_time_scatter_df(self):
-		return self.cycle_time_scatter_df
+		return_df = self.cycle_time_scatter_df.copy()
+		return_df['Done_Date'] = return_df['Done_Date'].dt.date
+		return return_df
 
 	def get_errors(self):
 		return self.errors
@@ -138,10 +146,9 @@ class ChartBuilderClass:
 							   'Verify there are valid dates in input file')
 			return
 
-		# convert date columns to datetime elements
-		self.clean_df.loc[:, self.start_col:self.end_col] = \
-			self.clean_df.loc[:, self.start_col:self.end_col].apply(pd.to_datetime, errors='coerce')
+		# convert date columns to date elements (NOT DATETIME)
 		test_df = self.clean_df.loc[:, self.start_col: self.end_col]
+		test_df = test_df.loc[:, self.start_col: self.end_col].applymap(lambda x: pd.to_datetime(x).date())
 		test_df = self.fillna_dates(test_df)
 		test_df.columns = \
 			[f'{i}_{x}' for i, x in enumerate(test_df.columns, 1)]
@@ -166,7 +173,8 @@ class ChartBuilderClass:
 		min_date = min(self.clean_df[self.start_col])
 		if self.use_start_date:
 			min_date = self.start_date
-		rng = pd.date_range(min_date, datetime.today())
+		rng = pd.date_range(min_date, date.today())
+		# NOTE: A range creates a datetime list and many of the other dataframes are storing dates.
 		self.dates_df = pd.DataFrame({'Date': rng, 'WIP': 0, 'Throughput': 0, 'Avg Cycle Time': 0})
 
 		self.prep_going_good = True
@@ -186,7 +194,7 @@ class ChartBuilderClass:
 		throughput_count = self.completed_items_df[self.end_col].value_counts()
 		self.throughput_85_confidence = throughput_count.quantile(0.85)
 		self.throughput_50_confidence = throughput_count.quantile(0.50)
-		num_days = (datetime.today() - self.completed_items_df[self.end_col].min()).days
+		num_days = (date.today() - self.completed_items_df[self.end_col].min()).days
 		self.throughput_average = round(sum(throughput_count) / num_days, 2)
 
 		self.prep_going_good = True
@@ -221,7 +229,7 @@ class ChartBuilderClass:
 		# Create a copy of clean_df and set all of the NaT dates to today's date
 		# (this makes the date math work in the reverse cycle through the date_col_names list)
 		temp_clean_df = self.clean_df.copy()
-		temp_clean_df.fillna(datetime.today(), inplace=True)
+		temp_clean_df.fillna(date.today(), inplace=True)
 		self.aging_wip_df = pd.DataFrame({'Name': self.clean_df[self.name_col], 'Age': 0, 'Status': '',
 										  'Start Date': self.clean_df[self.start_col], 'Done_Date': pd.NaT})
 
