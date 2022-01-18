@@ -43,14 +43,19 @@ def app():
 									  daily_wip_limit)
 	chart_builder.prep_for_charting()
 	if not Globals.GOOD_FOR_GO:
+		st.subheader('Errors were found when preparing to Chart data:')
 		st.write(chart_builder.get_errors())
 		return
 
 	chart_builder.build_charts()
 	if not Globals.CHARTS_BUILT_SUCCESSFULLY:
+		st.subheader('Errors were found while creating Charts:')
 		st.write(chart_builder.get_errors())
 		return
 
+	st.subheader('Assumptions from building Charts:')
+	st.write(chart_builder.get_assumptions())
+	st.subheader('Helpful tips for reading Charts:')
 	st.write(build_helpful_tips())
 
 	# Horizontal Separator

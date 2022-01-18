@@ -114,7 +114,7 @@ class ChartBuilderClass:
 	def get_assumptions(self):
 		assumptions = [['Phases of your flow were sequential columns between the specified start/end columns.'],
 					   ['Flow phase columns only contained valid dates.'],
-					   ['Any gaps in dates between phases were filled from the next valid date.']]
+					   ['Any gaps in dates between phases were back-filled from the next valid date.']]
 		if 'Cancelled' in Globals.INPUT_CSV_DATAFRAME:
 			assumptions.append(['Cancelled items were excluded from calculations.'])
 		else:
@@ -136,19 +136,32 @@ class ChartBuilderClass:
 		if 'Cancelled' in self.clean_df:
 			cancelled_mask = self.clean_df['Cancelled'] != 'Yes'
 			self.clean_df = self.clean_df.loc[cancelled_mask]
+		start_idx = self.clean_df.columns.get_loc(self.start_col)
+		end_idx = self.clean_df.columns.get_loc(self.end_col)
+		if start_idx >= end_idx:
+			self.errors.append('The Start Status must be AFTER the End Status')
+			self.prep_going_good = False
+			return
 
 		start_bool_series = pd.notnull(self.clean_df[self.start_col])
 		self.clean_df = self.clean_df.loc[start_bool_series]
 
 		if self.clean_df is None:
-			self.prep_going_good = False
 			self.errors.append('No in-progress data to chart from the input set. '
 							   'Verify there are valid dates in input file')
+			self.prep_going_good = False
 			return
 
 		# convert date columns to date elements (NOT DATETIME)
 		test_df = self.clean_df.loc[:, self.start_col: self.end_col]
-		test_df = test_df.loc[:, self.start_col: self.end_col].applymap(lambda x: pd.to_datetime(x).date())
+		test_df = test_df.loc[:, self.start_col: self.end_col].applymap(lambda x: pd.to_datetime(x, errors='coerce').date())
+
+		length_check = test_df.dropna(subset=[self.start_col])
+		if len(length_check.index) == 0:
+			self.errors.append('There are no valid entries using this Start Status')
+			self.prep_going_good = False
+			return
+
 		test_df = self.fillna_dates(test_df)
 		test_df.columns = \
 			[f'{i}_{x}' for i, x in enumerate(test_df.columns, 1)]
