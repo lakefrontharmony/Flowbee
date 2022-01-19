@@ -177,7 +177,7 @@ class ChartBuilderClass:
 		self.prep_going_good = True
 
 	def filter_clean_df_to_start_date(self):
-		include_mask = (pd.isnull(self.clean_df[self.end_col])) | (self.clean_df[self.end_col] >= self.start_date)
+		include_mask = (pd.isnull(self.clean_df[self.end_col])) | (self.clean_df[self.end_col] >= pd.Timestamp(self.start_date))
 		self.clean_df = self.clean_df.loc[include_mask]
 		# give a fresh index to the dataframe
 		self.clean_df.reset_index(drop=True, inplace=True)

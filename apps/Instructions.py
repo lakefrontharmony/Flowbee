@@ -4,8 +4,15 @@ from PIL import Image
 
 def app():
 	st.sidebar.header('Select an option from the Navigation dropdown to get started')
+	st.sidebar.subheader('Templates for Download:')
+	with open('Files/Flow_template.csv') as file:
+		st.sidebar.download_button('Download Flow CSV', file, file_name='Flow.csv')
+	with open('Files/SprintData_template.csv') as file:
+		st.sidebar.download_button('Download Sprint Data CSV', file, file_name='SprintData.csv')
+
 	flowbee_pic = Image.open('Files/Flowbee-box.jpeg')
 	st.image(flowbee_pic, caption='The original Flowbee')
+
 	st.title('Instructions')
 	st.write("""
 	1. Select an option from the Navigation dropdown above. \n
