@@ -1,0 +1,3 @@
+﻿ID,Name,Ready,In Progress,Done,Deployed,Cancelled,Type
+ABC-123,Name of item 1,2022-01-01,2022-01-02,2022-01-03,2022-01-04,,Strategic
+ABC-124,Name of item 2,2022-01-05,2022-01-07,,,Yes,Business Maintenance
