@@ -20,10 +20,14 @@ def app():
     if sprint_info_file is not None:
         Globals.SPRINT_INFO_DATAFRAME = pd.read_csv(sprint_info_file)
         Globals.SPRINT_INFO_DATAFRAME.columns = Globals.SPRINT_INFO_DATAFRAME.columns.str.replace(' ', '')
-        Globals.SPRINT_INFO_DATAFRAME['StartDate'] = pd.to_datetime(Globals.SPRINT_INFO_DATAFRAME['StartDate'],
-                                                                    format='%Y-%m-%d')
-        Globals.SPRINT_INFO_DATAFRAME['EndDate'] = pd.to_datetime(Globals.SPRINT_INFO_DATAFRAME['EndDate'],
-                                                                    format='%Y-%m-%d')
+        try:
+            Globals.SPRINT_INFO_DATAFRAME['StartDate'] = pd.to_datetime(Globals.SPRINT_INFO_DATAFRAME['StartDate'],
+                                                                        format='%Y-%m-%d')
+            Globals.SPRINT_INFO_DATAFRAME['EndDate'] = pd.to_datetime(Globals.SPRINT_INFO_DATAFRAME['EndDate'],
+                                                                      format='%Y-%m-%d')
+        except ValueError as v:
+            st.write('Error parsing Sprint Data Dates. Make sure dates are YYYY-MM-DD format.')
+            return
 
         flow_form = st.sidebar.form('Monte Carlo Submit')
         start_col = flow_form.selectbox('Choose Start Status', Globals.INPUT_CSV_DATAFRAME.columns)

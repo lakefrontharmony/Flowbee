@@ -23,7 +23,7 @@ def app():
     hist_duration = mc_form.selectbox('Choose Historical Duration for Monte Carlo', list(Globals.HIST_TIMEFRAME.keys()))
     sim_start_date = mc_form.date_input('Simulation Start Date', value=Globals.SIM_START_DATE)
     sim_end_date = mc_form.date_input('Simulation End Date', value=Globals.SIM_END_DATE)
-    items_to_complete = mc_form.number_input('How Many items to complete?', min_value=0, max_value=50, value=20,
+    items_to_complete = mc_form.number_input('How Many items to complete?', min_value=0, max_value=250, value=20,
                                                 step=1)
     Globals.NUM_SIMULATION_ITERATIONS = mc_form.number_input('How Many iterations to run?', min_value=1000, max_value=50000,
                                                 value=10000,
