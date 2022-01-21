@@ -25,7 +25,7 @@ def app():
                                                                         format='%Y-%m-%d')
             Globals.SPRINT_INFO_DATAFRAME['EndDate'] = pd.to_datetime(Globals.SPRINT_INFO_DATAFRAME['EndDate'],
                                                                       format='%Y-%m-%d')
-        except ValueError as v:
+        except ValueError:
             st.write('Error parsing Sprint Data Dates. Make sure dates are YYYY-MM-DD format.')
             return
 
@@ -61,13 +61,13 @@ def app():
     st.header('Assumptions made during calculations')
     st.write(calculator.get_flow_metric_assumptions())
     st.header('General Statistics of Metrics')
-    st.write(Globals.FLOW_METRIC_STATS)
+    st.write(Globals.FLOW_METRIC_STATS.astype(str))
     st.header('Completed Items')
     st.write(calculator.get_completed_item_names())
     st.header('Flow Metric Results')
-    st.write(Globals.FLOW_METRIC_RESULTS)
+    st.write(Globals.FLOW_METRIC_RESULTS.astype(str))
     st.header('Categorical Results')
-    st.write(Globals.FLOW_METRIC_CATEGORY_RESULTS)
+    st.write(Globals.FLOW_METRIC_CATEGORY_RESULTS.astype(str))
 
 
 def display_example_csv_dataframe():
