@@ -188,7 +188,11 @@ class SimulationCalcClass:
 	# Any global fields that are helpful to have frequently during simulations.
 	# Also building a general stats df for later reference
 	def final_field_preparation(self):
-		Globals.WORKING_PERCENTILES = self.dist_df
+		Globals.WORKING_PERCENTILES = self.dist_df.copy()
+		pct_list = (Globals.WORKING_PERCENTILES['Frequency'] * 100).round(2)
+		pct_list = pct_list.astype(str) + '%'
+		Globals.WORKING_PERCENTILES['Frequency'] = pct_list
+		print(Globals.WORKING_PERCENTILES)
 		self.max_entries_per_day = int(self.dist_df['Count'].max())
 		self.days_of_simulation = (self.sim_end - self.sim_start).days
 		self.days_of_simulation += 1  # include the start date (which date math was not doing)

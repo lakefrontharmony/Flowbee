@@ -45,13 +45,13 @@ def app():
     st.write(simulator.get_monte_carlo_assumptions())
 
     st.header('General Statistics of Simulations')
-    st.write(Globals.MC_SIMULATION_STATS)
+    st.write(Globals.MC_SIMULATION_STATS.astype(str))
 
     # Display "How Many" data
     st.header(f'How Many items will we complete by {sim_end_date}?')
     st.write(f'This grid helps you state, "After running {Globals.NUM_SIMULATION_ITERATIONS} simulations, '
              f'XX or more items completed in YY% of cases."')
-    st.write(Globals.HOW_MANY_PERCENTILES)
+    st.write(Globals.HOW_MANY_PERCENTILES.astype(str))
     # Results dataframe
     st.bar_chart(build_how_many_disp_df())
 
@@ -60,7 +60,7 @@ def app():
     st.write(f'This grid helps you state, '
              f'"After running {Globals.NUM_SIMULATION_ITERATIONS} simulations, '
              f'{items_to_complete} or more items completed by yyyy-mm-dd"')
-    st.write(Globals.WHEN_PERCENTILES)
+    st.write(Globals.WHEN_PERCENTILES.astype(str))
     # Results dataframe
     st.bar_chart(build_when_disp_df())
 
