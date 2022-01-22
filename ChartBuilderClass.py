@@ -139,7 +139,7 @@ class ChartBuilderClass:
 		start_idx = self.clean_df.columns.get_loc(self.start_col)
 		end_idx = self.clean_df.columns.get_loc(self.end_col)
 		if start_idx >= end_idx:
-			self.errors.append('The Start Status must be AFTER the End Status')
+			self.errors.append('The End Status column must be AFTER the Start Status column')
 			self.prep_going_good = False
 			return
 
@@ -158,7 +158,7 @@ class ChartBuilderClass:
 
 		length_check = test_df.dropna(subset=[self.start_col])
 		if len(length_check.index) == 0:
-			self.errors.append('There are no valid entries using this Start Status')
+			self.errors.append('There are no valid entries using this Start Status column')
 			self.prep_going_good = False
 			return
 

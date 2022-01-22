@@ -26,6 +26,7 @@ def app():
 											  step=1)
 	use_start_date = chart_form.checkbox('Check to specify a starting date below:')
 	chart_start_date = chart_form.date_input('Data Start Date', value=date.today() - timedelta(days=90))
+
 	submit_button = chart_form.form_submit_button(label='Build Charts')
 
 	if not submit_button:
@@ -96,6 +97,7 @@ def app():
 
 	# ===== THROUGHPUT RUN CHART =====
 	build_throughput_run_chart(chart_builder)
+	build_monthly_velocity_chart(chart_builder)
 	# Horizontal Separator
 	st.markdown("""<hr style="height:10px;border:none;color:#333;background-color:#333;" /> """, unsafe_allow_html=True)
 
@@ -328,8 +330,37 @@ def build_throughput_run_chart(chart_builder: ChartBuilderClass):
 		y='Throughput:Q',
 		tooltip=['Date', 'Throughput']
 	).interactive()
-	# TODO: Build in 85% horizontal line for Throughput
 	st.altair_chart(throughput_line)
+
+
+def build_monthly_velocity_chart(chart_builder: ChartBuilderClass):
+	base_chart_data = chart_builder.get_run_df()
+	# calculate average monthly velocity
+	total_completed = sum(base_chart_data['Throughput'])
+	max_date = base_chart_data['Date'].max()
+	min_date = base_chart_data['Date'].min()
+	num_months = ((max_date.year - min_date.year) * 12) + (max_date.month - min_date.month)
+	avg_monthly_velocity = round(total_completed / num_months, 2)
+	base_chart_data['MonthlyVelocity'] = avg_monthly_velocity
+
+	st.write('The Monthly Velocity Chart can show how the above throughput run chart translates to a monthly pattern.'
+			 'Are there any trends which would indicate a need for change of behaviors in delivery?')
+
+	velocity_chart = alt.Chart(base_chart_data, title="Monthly Velocity Chart")
+	bar_graph = velocity_chart.mark_bar().encode(
+		x=alt.X('yearmonth(Date):T', title='Date'),
+		y=alt.Y('sum(Throughput):Q', title='Count'),
+		tooltip=['sum(Throughput)', 'yearmonth(Date)']
+	).interactive()
+	velocity_avg_y = velocity_chart.mark_rule(strokeDash=[12, 6], size=2, color='black').encode(
+		y='MonthlyVelocity:Q'
+	)
+	velocity_avg_label = velocity_chart.mark_text(align='left', baseline='bottom', dx=10, color='black', clip=False).encode(
+		alt.X('Date:T', aggregate='max'),
+		alt.Y('MonthlyVelocity:Q'),
+		alt.Text('MonthlyVelocity:Q')
+	)
+	st.altair_chart(bar_graph + velocity_avg_y + velocity_avg_label)
 	# TODO: Create Enhance Run Stats
 	st.write(chart_builder.get_run_df())
 
@@ -405,29 +436,30 @@ def build_cycle_time_scatterplot(chart_builder: ChartBuilderClass):
 	cycle_time_85_confidence_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='red').encode(
 		y='CycleTime85:Q'
 	)
-	cycle_time_50_confidence_Y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='green').encode(
+	cycle_time_50_confidence_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='green').encode(
 		y='CycleTime50:Q'
 	)
 	cycle_time_average_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='black').encode(
 		y='CycleTimeAvg:Q'
 	)
-	label_85 = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='red').encode(
+	label_85 = cycle_scatter_chart.mark_text(align='left', baseline='bottom', dx=10, color='red', clip=False).encode(
 		alt.X('Done_Date:T', aggregate='max'),
 		alt.Y('CycleTime85:Q'),
 		alt.Text('CycleTime85:Q')
 	)
-	label_50 = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='green').encode(
+	label_50 = cycle_scatter_chart.mark_text(align='left', baseline='bottom', dx=10, color='green', clip=False).encode(
 		alt.X('Done_Date:T', aggregate='max'),
 		alt.Y('CycleTime50:Q'),
 		alt.Text('CycleTime50:Q')
 	)
-	label_avg = cycle_scatter_chart.mark_text(align='right', baseline='bottom', dx=-20, color='black').encode(
+	label_avg = cycle_scatter_chart.mark_text(align='left', baseline='bottom', dx=10, color='black', clip=False).encode(
 		alt.X('Done_Date:T', aggregate='max'),
 		alt.Y('CycleTimeAvg:Q'),
 		alt.Text('CycleTimeAvg:Q')
 	)
-	st.altair_chart(scatter_plot + cycle_time_85_confidence_y + cycle_time_50_confidence_Y + cycle_time_average_y
+	st.altair_chart(scatter_plot + cycle_time_85_confidence_y + cycle_time_50_confidence_y + cycle_time_average_y
 					+ label_85 + label_50 + label_avg,
 					use_container_width=True)
+
 	# TODO: Enhance Cycle Time Stats
 	st.write(chart_builder.get_cycle_time_scatter_df())
