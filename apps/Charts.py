@@ -343,7 +343,7 @@ def build_monthly_velocity_chart(chart_builder: ChartBuilderClass):
 	avg_monthly_velocity = round(total_completed / num_months, 2)
 	base_chart_data['MonthlyVelocity'] = avg_monthly_velocity
 
-	st.write('The Monthly Velocity Chart can show how the above throughput run chart translates to a monthly pattern.'
+	st.write('The Monthly Velocity Chart can show how the above throughput run chart translates to a monthly pattern. '
 			 'Are there any trends which would indicate a need for change of behaviors in delivery?')
 
 	velocity_chart = alt.Chart(base_chart_data, title="Monthly Velocity Chart")

@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from datetime import datetime, date
+from datetime import date
 from ReleaseMetricCalcClass import ReleaseMetricCalcClass
 
 
@@ -9,20 +9,10 @@ from ReleaseMetricCalcClass import ReleaseMetricCalcClass
 # FIXTURES
 ###################################
 @pytest.fixture()
-def input_calculator(input_json_pipeline_file):
+def input_release_calculator(input_json_pipeline_file):
 	return_calculator = ReleaseMetricCalcClass()
 	return_calculator.read_json_file(input_json_pipeline_file)
 	return return_calculator
-
-
-@pytest.fixture()
-def input_json_pipeline_file():
-	return open('Files/pipeline_example.json')
-
-
-@pytest.fixture()
-def input_release_csv_file():
-	return open('Files/fix_versions_unit_test.csv')
 
 
 @pytest.fixture()
@@ -89,77 +79,89 @@ def pipeline_count_df():
 ###################################
 # UNIT TESTS
 ###################################
-def test_matching_pipeline_entry_exists(input_calculator):
+def test_open_and_create_release_dataframe(input_release_calculator, test_release_in_file):
+	# setup
+	in_file = '../Files/UnitTestFiles/test_release_in_file.csv'
+	# call function
+	input_release_calculator.read_releases_csv_file(in_file)
+	result = input_release_calculator.get_release_df()
+	# set expectation
+	expected = test_release_in_file
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+def test_matching_pipeline_entry_exists(input_release_calculator):
 	# setup
 	known_entry = 'pipeline_num_2'
 	# call function
-	result = input_calculator.pipeline_entry_exists_for(known_entry)
+	result = input_release_calculator.pipeline_entry_exists_for(known_entry)
 	# set expectation
 	expected = 'True'
 	# assertion
 	assert result == expected
 
 
-def test_matching_pipeline_entry_exists_but_not_available(input_calculator):
+def test_matching_pipeline_entry_exists_but_not_available(input_release_calculator):
 	# setup
 	known_entry = 'pipeline_num_3'
 	# call function
-	result = input_calculator.pipeline_entry_exists_for(known_entry)
+	result = input_release_calculator.pipeline_entry_exists_for(known_entry)
 	# set expectation
 	expected = 'False'
 	# assertion
 	assert result == expected
 
 
-def test_matching_pipeline_entry_doesnt_exist(input_calculator):
+def test_matching_pipeline_entry_doesnt_exist(input_release_calculator):
 	# setup
 	unknown_entry = 'withdrawals'
 	# call function
-	result = input_calculator.pipeline_entry_exists_for(unknown_entry)
+	result = input_release_calculator.pipeline_entry_exists_for(unknown_entry)
 	# set expectation
 	expected = 'False'
 	# assertion
 	assert result == expected
 
 
-def test_stripping_fix_version_of_release_numbers(input_calculator, test_release_in_file, test_release_cleaned_file):
+def test_stripping_fix_version_of_release_numbers(input_release_calculator, test_release_in_file, test_release_cleaned_file):
 	# setup
 	# call function
-	result = input_calculator.strip_release_name_of_version(test_release_in_file)
+	result = input_release_calculator.strip_release_name_of_version(test_release_in_file)
 	# set expectation
 	expected = test_release_cleaned_file
 	# assertion
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-def test_comparing_release_df_to_pipelines(input_calculator, test_release_cleaned_file,
+def test_comparing_release_df_to_pipelines(input_release_calculator, test_release_cleaned_file,
 										   tested_release_against_pipeline_file):
 	# setup
 	# call function
-	result = input_calculator.check_df_for_pipelines(test_release_cleaned_file)
+	result = input_release_calculator.check_df_for_pipelines(test_release_cleaned_file)
 	# set expectation
 	expected = tested_release_against_pipeline_file
 	# assertion
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-def test_comparing_release_df_to_pipeline_between_dates(input_calculator, test_release_cleaned_file,
+def test_comparing_release_df_to_pipeline_between_dates(input_release_calculator, test_release_cleaned_file,
 														releases_between_dec_15_2021_and_jan_15_2022_df):
 	# setup
 	start_date = date(2021, 12, 15)
 	end_date = date(2022, 1, 15)
 	# call function
-	result = input_calculator.check_df_for_pipelines_between_dates(test_release_cleaned_file, start_date, end_date)
+	result = input_release_calculator.check_df_for_pipelines_between_dates(test_release_cleaned_file, start_date, end_date)
 	# set expectation
 	expected = releases_between_dec_15_2021_and_jan_15_2022_df
 	# assertion
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-def test_build_pipeline_summary_pd(input_calculator, tested_release_against_pipeline_file, pipeline_count_df):
+def test_build_pipeline_summary_pd(input_release_calculator, tested_release_against_pipeline_file, pipeline_count_df):
 	# setup
 	# call function
-	result = input_calculator.build_summary_df(tested_release_against_pipeline_file)
+	result = input_release_calculator.build_summary_df(tested_release_against_pipeline_file)
 	# set expectation
 	expected = pipeline_count_df
 	# assertion

@@ -127,8 +127,6 @@ class ChartBuilderClass:
 	# =========================================
 	# Build dataframe with non-null dates in end-column and start-column (include all columns between those two)
 	# Convert date columns to datetime elements.
-	# TODO: Can we make it so that it gets the true Status of the item before filtering down?
-	#  Right now it is grabbing the status of self.end_col
 	def build_clean_df(self):
 		self.clean_df = Globals.INPUT_CSV_DATAFRAME
 

@@ -20,16 +20,16 @@ class ReleaseMetricCalcClass:
 	# GETTERS
 	# ##################################
 	def get_json_file(self):
-		return self.json_file
+		return self.json_file   # pragma: no cover
 
 	def get_json_dataframe(self):
-		return self.json_dataframe
+		return self.json_dataframe   # pragma: no cover
 
 	def get_release_df(self):
-		return self.release_df
+		return self.release_df   # pragma: no cover
 
 	def get_release_summary_df(self):
-		return self.summary_df
+		return self.summary_df   # pragma: no cover
 
 	# ##################################
 	# OPEN FILES
@@ -43,7 +43,7 @@ class ReleaseMetricCalcClass:
 		self.json_dataframe = pd.json_normalize(df_1.iat[0, 0])
 
 	def read_releases_csv_file(self, in_csv):
-		self.release_df = pd.read_csv(in_csv)
+		self.release_df = pd.read_csv(in_csv, keep_default_na=False)
 		if self.fix_version_col_name not in self.release_df:
 			# error if this column does not exist
 			pass
@@ -57,17 +57,19 @@ class ReleaseMetricCalcClass:
 	# ##################################
 	# EXTERNAL FUNCTIONS
 	# ##################################
+	# excluding this Function from code coverage because all it does is call other internal functions which are included.
 	def prepare_for_metrics(self, in_pipeline_file, in_releases_file):
-		self.read_json_file(in_pipeline_file)
-		self.read_releases_csv_file(in_releases_file)
-		self.release_df = self.strip_release_name_of_version(self.release_df)
+		self.read_json_file(in_pipeline_file)  # pragma: no cover
+		self.read_releases_csv_file(in_releases_file)  # pragma: no cover
+		self.release_df = self.strip_release_name_of_version(self.release_df)  # pragma: no cover
 
+	# excluding this Function from code coverage because all it does is call other internal functions which are included.
 	def run_release_metrics(self, start_date=None, end_date=None):
-		if start_date is None:
-			self.release_df = self.check_df_for_pipelines(self.release_df)
-		else:
-			self.release_df = self.check_df_for_pipelines_between_dates(self.release_df, start_date, end_date)
-		self.summary_df = self.build_summary_df(self.release_df)
+		if start_date is None:  # pragma: no cover
+			self.release_df = self.check_df_for_pipelines(self.release_df)  # pragma: no cover
+		else:  # pragma: no cover
+			self.release_df = self.check_df_for_pipelines_between_dates(self.release_df, start_date, end_date)  # pragma: no cover
+		self.summary_df = self.build_summary_df(self.release_df)  # pragma: no cover
 
 	# ##################################
 	# INTERNAL FUNCTIONS
