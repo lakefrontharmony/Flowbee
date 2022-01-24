@@ -140,12 +140,22 @@ def display_example_csv_dataframe():
 
 def build_cfd_chart(chart_builder: ChartBuilderClass):
 	st.header("How do I use this chart?")
+	# TODO: Display 6 properties of a CFD
+	#
 	st.write("""
-			The Cumulative Flow Diagram shows how many items have entered each phase of a process. The slope of the line
-			shows you how rapidly you are taking in work and completing it. 
-			The thickness of each section tells how much work is in progress on any given date. 
-			Look horizontally to see how long the approximate average time is to move from one phase to another. 
-			Look vertically to see how many items were in progress between two phases on any given day. \n 
+			A Cumulative Flow Diagram is a visual representation of the three basic metrics of flow: WIP, Cycle Time, and
+			Throughput (through averages or approximate averages). A CFD should adhere to the following six properties \n
+			1: The top line always represents the cumulative arrivals to a process. The bottom line always represents 
+			cumulative departures from a process \n
+			2: Due to the cumulative nature, no line on a CFD can ever decrease (go down). \n
+			3: The vertical distance between any two lines is the total amount of work that is in progress between the 
+			two workflow steps represented by the two chosen lines. \n
+			4: The horizontal distance between any two lines on a CFD represents the Approximate Average Cycle Time 
+			for items that finished between the two workflow steps represented by the chosen two lines. \n
+			5: The data displayed on a CFD depicts only what has happened for a given process, not a projection of what 
+			will happen. \n
+			6: The slope of any line between any two reporting intervals on a CFD represents the exact 
+			Average Arrival Rate of the process state represented by the succeeding band. \n
 			To read more on how Cumulative Flow Diagrams can be utilized, check out
 			"Actionable Agile Metrics for Predictability" by Dan Vacanti. A summary of the CFD section can be found here:
 			https://tameflow.com/blog/2015-03-12/actionable-agile-metrics-review-part-4/
@@ -172,6 +182,11 @@ def build_cfd_chart(chart_builder: ChartBuilderClass):
 	# TODO: Enhance CFD Stats
 	# show_cfd_stats = st.checkbox('Show CFD Stats')
 	st.write(chart_builder.get_cfd_df())
+
+
+def build_cfd_stats(chart_builder: ChartBuilderClass):
+	# TODO: Build actual average throughput for each phase with rise/run calc for each date column
+	pass
 
 
 def build_aging_wip(chart_builder: ChartBuilderClass):
