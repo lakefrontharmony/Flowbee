@@ -7,6 +7,7 @@ from ChartBuilderClass import ChartBuilderClass
 
 
 def app():
+	# TODO: Make the dataframes for each chart downloadable
 	st.title('Charts')
 
 	uploaded_file = st.sidebar.file_uploader("Select Date File", type='csv')
@@ -140,8 +141,6 @@ def display_example_csv_dataframe():
 
 def build_cfd_chart(chart_builder: ChartBuilderClass):
 	st.header("How do I use this chart?")
-	# TODO: Display 6 properties of a CFD
-	#
 	st.write("""
 			A Cumulative Flow Diagram is a visual representation of the three basic metrics of flow: WIP, Cycle Time, and
 			Throughput (through averages or approximate averages). A CFD should adhere to the following six properties \n
@@ -185,7 +184,10 @@ def build_cfd_chart(chart_builder: ChartBuilderClass):
 
 
 def build_cfd_stats(chart_builder: ChartBuilderClass):
-	# TODO: Build actual average throughput for each phase with rise/run calc for each date column
+	# TODO: Build actual average throughput for each phase with rise/run calc for each column.
+	# TODO: Give a inclination of Flow Debt status.
+	# Can we build in something that takes a few samples of approx. avg cycle time? Use that against actual avg.
+	# cycle time to see if we are generally incurring, paying back, or not realizing flow debt.
 	pass
 
 
