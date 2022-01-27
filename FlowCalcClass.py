@@ -156,6 +156,17 @@ class FlowCalcClass:
 
 		self.prep_going_good = True
 
+	def removed_cancelled_items(self, in_df: pd.DataFrame) -> pd.DataFrame:
+		return_df = in_df.copy()
+		if 'Cancelled' in return_df:
+			cancelled_mask = return_df['Cancelled'] != 'Yes'
+			return_df = return_df.loc[cancelled_mask]
+			end_bool_series = pd.notnull(return_df[self.end_col])
+			return_df = return_df[end_bool_series]
+			start_bool_series = pd.notnull(return_df[self.start_col])
+			return_df = return_df[start_bool_series]
+		return return_df
+
 	def build_clean_completed_items_df(self, clean_df):
 		temp_df = clean_df.loc[:, [self.item_names_column, self.start_col, self.end_col]]
 		temp_df[self.start_col] = temp_df[self.start_col].astype(str)
