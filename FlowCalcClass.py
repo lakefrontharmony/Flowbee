@@ -34,11 +34,12 @@ class FlowCalcClass:
 	# EXTERNALLY CALLED FUNCTIONS
 	# =========================================
 	def prep_for_metrics(self):
-		self.build_start_end_dates()
+		self.start_date = self.find_matching_sprint_date(get_sprint_dataframe(), self.start_sprint, 'StartDate')
+		self.end_date = self.find_matching_sprint_date(get_sprint_dataframe(), self.end_sprint, 'EndDate')
 		if self.prep_going_good:
-			self.build_clean_dataframe()
+			self.clean_df = self.build_clean_dataframe(get_flow_dataframe())
 		if self.prep_going_good:
-			self.build_wip_dataframe()
+			self.wip_df = self.build_wip_dataframe(get_flow_dataframe())
 		if self.prep_going_good:
 			self.build_dates_dataframe()
 		if self.prep_going_good:
@@ -101,71 +102,70 @@ class FlowCalcClass:
 	# =========================================
 	# find matching rows, get correct column as a series,
 	# convert series to a ndarray of values, and select the first value (if it exists)
-	def build_start_end_dates(self):
-		sprint_df = get_sprint_dataframe()
-		start_row = sprint_df['SprintName'].values == self.start_sprint
-		start_series = sprint_df[start_row]['StartDate'].values
-		if start_series.size == 0:
-			self.errors.append('No matching dates found for Start Sprint')
+	def find_matching_sprint_date(self, in_df, sprint_name, target_column):
+		return_date = None
+		found_row = in_df['SprintName'].values == sprint_name
+		found_series = in_df[found_row][target_column].values
+		if found_series.size == 0:
+			self.errors.append(f'No matching dates found for {sprint_name} in the {target_column} column')
 			self.prep_going_good = False
 		else:
-			self.start_date = pd.to_datetime(start_series[0])
-
-		end_row = sprint_df['SprintName'].values == self.end_sprint
-		end_series = sprint_df[end_row]['EndDate'].values
-		if end_series.size == 0:
-			self.errors.append('No matching dates found for End Sprint')
-			self.prep_going_good = False
-		else:
-			self.end_date = pd.to_datetime(end_series[0])
-		# ToDo: If end date is before start date, error out (as opposed to it abending)
+			return_date = pd.to_datetime(found_series[0])
+		return return_date
 
 	# Build dataframe with non-null dates in end-column and start-column (include all columns between those two)
 	# Convert date columns to datetime elements.
 	# Filter to only entries within the appropriate date range.
 	# TODO: Add Parent Column to dataframe
-	def build_clean_dataframe(self):
-		base_df = get_flow_dataframe()
+	def build_clean_dataframe(self, in_df) -> pd.DataFrame:
+		return_df = in_df
 		# filter to only items which have not been cancelled
-		self.clean_df = self.removed_cancelled_and_null_rows(base_df)
-		if self.clean_df is None:
+		return_df = self.removed_cancelled_rows(return_df)
+
+		end_bool_series = pd.notnull(return_df[self.end_col])
+		return_df = return_df[end_bool_series]
+
+		start_bool_series = pd.notnull(return_df[self.start_col])
+		return_df = return_df[start_bool_series]
+
+		if return_df is None:
 			self.prep_going_good = False
 			self.errors.append('Had no entries finish in this time frame')
-			return
+			# return an empty dataframe
+			return pd.DataFrame()
 
 		# convert date columns to datetime elements.
-		self.clean_df[self.start_col] = self.clean_df[self.start_col].apply(pd.to_datetime, errors='coerce')
-		self.clean_df[self.end_col] = self.clean_df[self.end_col].apply(pd.to_datetime, errors='coerce')
+		return_df[self.start_col] = return_df[self.start_col].apply(pd.to_datetime, errors='coerce')
+		return_df[self.end_col] = return_df[self.end_col].apply(pd.to_datetime, errors='coerce')
 
 		# return entries within the appropriate date range
-		date_mask = (self.clean_df[self.end_col] >= self.start_date) & (
-					self.clean_df[self.end_col] <= self.end_date)
-		self.clean_df = self.clean_df.loc[date_mask]
+		date_mask = (return_df[self.end_col] >= self.start_date) & (
+					return_df[self.end_col] <= self.end_date)
+		return_df = return_df.loc[date_mask]
 		# Before we trim out to just the date fields, save off a df that can be displayed later
-		self.completed_items = self.build_clean_completed_items_df(self.clean_df)
+		self.completed_items = self.save_clean_completed_items_df(return_df)
 		# changed code to not gather all columns between start and end column.
-		self.clean_df = self.clean_df.loc[:, [self.start_col, self.end_col, self.categories_column]]
+		return_df = return_df.loc[:, [self.start_col, self.end_col, self.categories_column]]
 
-		if len(self.clean_df.index) == 0:
+		if len(return_df.index) == 0:
 			self.errors.append('No data to run flow metrics against. Select valid Sprint range')
 			self.prep_going_good = False
-			return
+			# return an empty dataframe
+			return pd.DataFrame()
 
 		self.prep_going_good = True
+		return_df.reset_index(drop=True, inplace=True)
+		return return_df
 
-	def removed_cancelled_and_null_rows(self, in_df: pd.DataFrame) -> pd.DataFrame:
+	def removed_cancelled_rows(self, in_df: pd.DataFrame) -> pd.DataFrame:
 		return_df = in_df.copy()
 		if 'Cancelled' in return_df:
 			cancelled_mask = return_df['Cancelled'] != 'Yes'
 			return_df = return_df.loc[cancelled_mask]
-			end_bool_series = pd.notnull(return_df[self.end_col])
-			return_df = return_df[end_bool_series]
-			start_bool_series = pd.notnull(return_df[self.start_col])
-			return_df = return_df[start_bool_series]
 			return_df.reset_index(drop=True, inplace=True)
 		return return_df
 
-	def build_clean_completed_items_df(self, clean_df):
+	def save_clean_completed_items_df(self, clean_df) -> pd.DataFrame:
 		temp_df = clean_df.loc[:, [self.item_names_column, self.start_col, self.end_col]]
 		temp_df[self.start_col] = temp_df[self.start_col].astype(str)
 		temp_df[self.end_col] = temp_df[self.end_col].astype(str)
@@ -174,18 +174,18 @@ class FlowCalcClass:
 	# Build to only columns between start and end column
 	# Use only items that started before the end date and are still in progress (null on end column or ended after period)
 	# TODO: Add Parent Column to dataframe
-	def build_wip_dataframe(self):
-		base_df = get_flow_dataframe()
+	def build_wip_dataframe(self, in_df) -> pd.DataFrame:
+		return_df = in_df
 		# filter to only items which have not been cancelled
-		if 'Cancelled' in base_df:
-			cancelled_mask = base_df['Cancelled'] != 'Yes'
-			base_df = base_df.loc[cancelled_mask]
+		return_df = self.removed_cancelled_rows(return_df)
 
-		temp_df = base_df.loc[:, [self.start_col, self.end_col, self.categories_column]]
+		temp_df = return_df.loc[:, [self.start_col, self.end_col, self.categories_column]]
 		temp_df = temp_df.apply(pd.to_datetime, errors='coerce')
 		date_mask = (temp_df[self.start_col] <= self.end_date) & (temp_df[self.end_col].isnull()) | \
 					((temp_df[self.start_col] <= self.end_date) & (temp_df[self.end_col] > self.end_date))
-		self.wip_df = temp_df.loc[date_mask]
+		return_df = temp_df.loc[date_mask]
+
+		return return_df
 
 	# Build a dataframe for the dates within our range
 	def build_dates_dataframe(self):

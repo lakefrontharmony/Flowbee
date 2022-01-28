@@ -18,7 +18,8 @@ def flow_df():
 						 ['A2', 'TestA2', 'Parent1', '2021-10-01', '2021-10-02', '2021-11-01', '', 'Strategic'],
 						 ['B1', 'TestB1', 'Parent2', '2021-12-01', '2021-12-15', '2021-12-20', '', 'Maintenance'],
 						 ['C3', 'TestC3', 'Parent3', '2021-01-01', '2021-05-01', '2022-01-05', '', 'Strategic'],
-						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler']],
+						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler'],
+						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-05', '', '', 'Strategic']],
 						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
 
 
@@ -27,8 +28,27 @@ def flow_no_cancelled_df():
 	return pd.DataFrame([['A2', 'TestA2', 'Parent1', '2021-10-01', '2021-10-02', '2021-11-01', '', 'Strategic'],
 						 ['B1', 'TestB1', 'Parent2', '2021-12-01', '2021-12-15', '2021-12-20', '', 'Maintenance'],
 						 ['C3', 'TestC3', 'Parent3', '2021-01-01', '2021-05-01', '2022-01-05', '', 'Strategic'],
+						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler'],
+						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-05', '', '', 'Strategic']],
+						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
+
+
+@pytest.fixture()
+def flow_completed_df():
+	return pd.DataFrame([['A2', 'TestA2', 'Parent1', '2021-10-01', '2021-10-02', '2021-11-01', '', 'Strategic'],
+						 ['B1', 'TestB1', 'Parent2', '2021-12-01', '2021-12-15', '2021-12-20', '', 'Maintenance'],
+						 ['C3', 'TestC3', 'Parent3', '2021-01-01', '2021-05-01', '2022-01-05', '', 'Strategic'],
 						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler']],
 						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
+
+
+@pytest.fixture()
+def flow_completed_saved_items_df():
+	return pd.DataFrame([['TestA2', '2021-10-02', '2021-11-01'],
+						 ['TestB1', '2021-12-15', '2021-12-20'],
+						 ['TestC3', '2021-05-01', '2022-01-05'],
+						 ['TestZ5', '2021-10-06', '2022-01-10']],
+						 columns=['Name', 'InProgress', 'Done'])
 
 
 @pytest.fixture()
@@ -59,15 +79,65 @@ def input_flow_calculator(sprint_df):
 ###################################
 # UNIT TESTS
 ###################################
-def test_remove_cancelled_and_null_rows(input_flow_calculator, flow_df, flow_no_cancelled_df):
+def test_remove_cancelled_rows(input_flow_calculator, flow_df, flow_no_cancelled_df):
 	# setup
 	# call function
-	# mocker.patch('input_flow_calculator.get_sprint_dataframe', return_value=sprint_df)
-	result = input_flow_calculator.removed_cancelled_and_null_rows(flow_df)
+	result = input_flow_calculator.removed_cancelled_rows(flow_df)
 	# set expectation
 	expected = flow_no_cancelled_df
 	# assertion
 	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+def test_save_completed_items_df(input_flow_calculator, flow_completed_df, flow_completed_saved_items_df):
+	# setup
+	# call function
+	result = input_flow_calculator.save_clean_completed_items_df(flow_completed_df)
+	# set expectation
+	expected = flow_completed_saved_items_df
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+def test_build_start_date(input_flow_calculator, sprint_df):
+	# setup
+	test_calculator = input_flow_calculator
+	# call function
+	result = test_calculator.find_matching_sprint_date(sprint_df, '1.2', 'StartDate')
+	# set expectation
+	expected = datetime(2022, 1, 17)
+	# assertion
+	assert result == expected
+
+
+def test_build_end_date(input_flow_calculator, sprint_df):
+	# setup
+	test_calculator = input_flow_calculator
+	# call function
+	result = test_calculator.find_matching_sprint_date(sprint_df, '1.2', 'EndDate')
+	# set expectation
+	expected = datetime(2022, 1, 30)
+	# assertion
+	assert result == expected
+
+
+# def test_build_wip_df(input_flow_calculator):
+# 	pass
+
+
+# def test_build_dates_dataframe(input_flow_calculator):
+# 	pass
+
+
+# def test_build_throughput_run_dataframe(input_flow_calculator):
+# 	pass
+
+# def test_prep_categories(input_flow_calculator):
+# 	pass
+
+
+# def test_final_values_preparation(input_flow_calculator):
+# 	pass
 
 
 def test_prep_functions(input_flow_calculator, sprint_df, flow_df, mocker):
