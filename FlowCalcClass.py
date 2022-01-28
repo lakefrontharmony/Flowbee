@@ -20,27 +20,10 @@ class FlowCalcClass:
 
 		self.start_col = start_col
 		self.end_col = end_col
+		self.start_sprint = start_sprint
+		self.end_sprint = end_sprint
 		self.start_date = None
 		self.end_date = None
-
-		# find matching rows, get correct column as a series,
-		# convert series to a ndarray of values, and select the first value (if it exists)
-		start_row = Globals.SPRINT_INFO_DATAFRAME['SprintName'].values == start_sprint
-		start_series = Globals.SPRINT_INFO_DATAFRAME[start_row]['StartDate'].values
-		if start_series.size == 0:
-			self.errors.append('No matching dates found for Start Sprint')
-			self.prep_going_good = False
-		else:
-			self.start_date = pd.to_datetime(start_series[0])
-
-		end_row = Globals.SPRINT_INFO_DATAFRAME['SprintName'].values == end_sprint
-		end_series = Globals.SPRINT_INFO_DATAFRAME[end_row]['EndDate'].values
-		if end_series.size == 0:
-			self.errors.append('No matching dates found for End Sprint')
-			self.prep_going_good = False
-		else:
-			self.end_date = pd.to_datetime(end_series[0])
-		# ToDo: If end date is before start date, error out (as opposed to it abending)
 
 		self.clean_df = None
 		self.wip_df = None
@@ -51,6 +34,7 @@ class FlowCalcClass:
 	# EXTERNALLY CALLED FUNCTIONS
 	# =========================================
 	def prep_for_metrics(self):
+		self.build_start_end_dates()
 		if self.prep_going_good:
 			self.build_clean_dataframe()
 		if self.prep_going_good:
@@ -84,8 +68,6 @@ class FlowCalcClass:
 			self.calculate_category_metrics()
 		if self.parent_toggle:
 			self.calculate_average_parent_wip()
-			# TODO: Add print here once you build parent WIP calcs
-			# print('Done running Avg Parent WIP')
 
 	# This is a check for errors.
 	# Return True if errors were found, False if there were no errors
@@ -95,42 +77,57 @@ class FlowCalcClass:
 		return True
 
 	def get_error_msgs(self):
-		return self.errors
+		return self.errors  # pragma: no cover
 
 	def get_completed_item_names(self):
-		return self.completed_items
+		return self.completed_items  # pragma: no cover
 
 	# =========================================
 	# ASSUMPTIONS
 	# =========================================
 	def get_flow_metric_assumptions(self):
-		assumptions = [['Flow metrics are calculated on completed items only.'],
-					   ['Date range is inclusive of start and end sprint.'],
-					   ['"In Progress" is defined as an item which has started and has not completed by the end date.'],
-					   ['Rounding could cause a trivial amount of difference in some of these calculations.']
-					   ]
-		if 'Cancelled' in Globals.INPUT_CSV_DATAFRAME:
-			assumptions.append(['Cancelled items were excluded from calculations'])
-		assumptions_df = pd.DataFrame(assumptions, columns=['Assumption'])
-		return assumptions_df
+		assumptions = [['Flow metrics are calculated on completed items only.'],  # pragma: no cover
+					   ['Date range is inclusive of start and end sprint.'],  # pragma: no cover
+					   ['"In Progress" is defined as an item which has started and has not completed by the end date.'],  # pragma: no cover
+					   ['Rounding could cause a trivial amount of difference in some of these calculations.']  # pragma: no cover
+					   ]  # pragma: no cover
+		if 'Cancelled' in get_flow_dataframe():  # pragma: no cover
+			assumptions.append(['Cancelled items were excluded from calculations'])  # pragma: no cover
+		assumptions_df = pd.DataFrame(assumptions, columns=['Assumption'])  # pragma: no cover
+		return assumptions_df  # pragma: no cover
 
 	# =========================================
 	# PREP FUNCTIONS
 	# =========================================
+	# find matching rows, get correct column as a series,
+	# convert series to a ndarray of values, and select the first value (if it exists)
+	def build_start_end_dates(self):
+		sprint_df = get_sprint_dataframe()
+		start_row = sprint_df['SprintName'].values == self.start_sprint
+		start_series = sprint_df[start_row]['StartDate'].values
+		if start_series.size == 0:
+			self.errors.append('No matching dates found for Start Sprint')
+			self.prep_going_good = False
+		else:
+			self.start_date = pd.to_datetime(start_series[0])
+
+		end_row = sprint_df['SprintName'].values == self.end_sprint
+		end_series = sprint_df[end_row]['EndDate'].values
+		if end_series.size == 0:
+			self.errors.append('No matching dates found for End Sprint')
+			self.prep_going_good = False
+		else:
+			self.end_date = pd.to_datetime(end_series[0])
+		# ToDo: If end date is before start date, error out (as opposed to it abending)
+
 	# Build dataframe with non-null dates in end-column and start-column (include all columns between those two)
 	# Convert date columns to datetime elements.
 	# Filter to only entries within the appropriate date range.
 	# TODO: Add Parent Column to dataframe
 	def build_clean_dataframe(self):
-		base_df = Globals.INPUT_CSV_DATAFRAME
+		base_df = get_flow_dataframe()
 		# filter to only items which have not been cancelled
-		if 'Cancelled' in base_df:
-			cancelled_mask = base_df['Cancelled'] != 'Yes'
-			base_df = base_df.loc[cancelled_mask]
-		end_bool_series = pd.notnull(base_df[self.end_col])
-		self.clean_df = base_df[end_bool_series]
-		start_bool_series = pd.notnull(self.clean_df[self.start_col])
-		self.clean_df = self.clean_df[start_bool_series]
+		self.clean_df = self.removed_cancelled_and_null_rows(base_df)
 		if self.clean_df is None:
 			self.prep_going_good = False
 			self.errors.append('Had no entries finish in this time frame')
@@ -156,7 +153,7 @@ class FlowCalcClass:
 
 		self.prep_going_good = True
 
-	def removed_cancelled_items(self, in_df: pd.DataFrame) -> pd.DataFrame:
+	def removed_cancelled_and_null_rows(self, in_df: pd.DataFrame) -> pd.DataFrame:
 		return_df = in_df.copy()
 		if 'Cancelled' in return_df:
 			cancelled_mask = return_df['Cancelled'] != 'Yes'
@@ -165,6 +162,7 @@ class FlowCalcClass:
 			return_df = return_df[end_bool_series]
 			start_bool_series = pd.notnull(return_df[self.start_col])
 			return_df = return_df[start_bool_series]
+			return_df.reset_index(drop=True, inplace=True)
 		return return_df
 
 	def build_clean_completed_items_df(self, clean_df):
@@ -177,7 +175,7 @@ class FlowCalcClass:
 	# Use only items that started before the end date and are still in progress (null on end column or ended after period)
 	# TODO: Add Parent Column to dataframe
 	def build_wip_dataframe(self):
-		base_df = Globals.INPUT_CSV_DATAFRAME
+		base_df = get_flow_dataframe()
 		# filter to only items which have not been cancelled
 		if 'Cancelled' in base_df:
 			cancelled_mask = base_df['Cancelled'] != 'Yes'
@@ -218,7 +216,7 @@ class FlowCalcClass:
 																	 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY,
 																	 Globals.FLOW_METRIC_LEAD_TIME_KEY,
 																	 Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY])
-		Globals.FLOW_METRIC_CATEGORIES = Globals.INPUT_CSV_DATAFRAME[self.categories_column].unique()
+		Globals.FLOW_METRIC_CATEGORIES = get_flow_dataframe()[self.categories_column].unique()
 		if len(Globals.FLOW_METRIC_CATEGORIES) == 0:
 			self.category_calc_toggle = False
 			return
@@ -243,7 +241,7 @@ class FlowCalcClass:
 	# Find columns between the start and end date columns.
 	# Calculate Cycle time from the start date to leaving each column (note the date in the columns is enter, not leave).
 	def calculate_average_cycle_time(self):
-		pass
+		pass  # pragma: no cover
 
 	# Calculate the average time from start to end column.
 	def calculate_average_lead_time(self):
@@ -287,7 +285,7 @@ class FlowCalcClass:
 	# Find the min start date for each parent item and the max end date (or end of period)
 	# cycle through dates_df to see how many parents were IP each day
 	def calculate_average_parent_wip(self):
-		pass
+		pass  # pragma: no cover
 
 	# Calculate the duration of all items within the historical range (that have completed)
 	# Calculate the standard quantiles for historical duration
@@ -297,7 +295,7 @@ class FlowCalcClass:
 	# 	Build a Dataframe for each column between start and finish
 	# 	Items currently in progress have their age and ID put in the column in which they currently reside.
 	def calculate_aging_wip(self):
-		pass
+		pass  # pragma: no cover
 
 	# =========================================
 	# INTERNAL FUNCTIONS
@@ -323,3 +321,11 @@ class FlowCalcClass:
 															 Globals.FLOW_METRIC_LEAD_TIME_KEY: avg_lead_time,
 															 Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY: avg_throughput},
 															ignore_index=True)
+
+
+def get_sprint_dataframe() -> pd.DataFrame:
+	return Globals.SPRINT_INFO_DATAFRAME
+
+
+def get_flow_dataframe() -> pd.DataFrame:
+	return Globals.INPUT_CSV_DATAFRAME

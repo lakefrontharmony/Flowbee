@@ -14,21 +14,21 @@ from FlowCalcClass import FlowCalcClass
 ###################################
 @pytest.fixture()
 def flow_df():
-	return pd.DataFrame([['A1', 'TestA1', 'Parent1', '2021-11-01', '2021-11-10', '2021-12-01', 'Yes' 'Strategic'],
-						 ['A2', 'TestA2', 'Parent1', '2021-10-01', '2021-10-02', '2021-11-01', 'Strategic'],
-						 ['B1', 'TestB1', 'Parent2', '2021-12-01', '2021-12-15', '2021-12-20', 'Maintenance'],
-						 ['C3', 'TestC3', 'Parent3', '2021-01-01', '2021-05-01', '2021-06-01', 'Strategic'],
-						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2021-12-01', 'Enabler']],
-						 columns=['ID', 'Name', 'Parent', 'Ready', 'In Progress', 'Done', 'Cancelled', 'Type'])
+	return pd.DataFrame([['A1', 'TestA1', 'Parent1', '2021-11-01', '2021-11-10', '2021-12-01', 'Yes', 'Strategic'],
+						 ['A2', 'TestA2', 'Parent1', '2021-10-01', '2021-10-02', '2021-11-01', '', 'Strategic'],
+						 ['B1', 'TestB1', 'Parent2', '2021-12-01', '2021-12-15', '2021-12-20', '', 'Maintenance'],
+						 ['C3', 'TestC3', 'Parent3', '2021-01-01', '2021-05-01', '2022-01-05', '', 'Strategic'],
+						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler']],
+						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
 
 
 @pytest.fixture()
 def flow_no_cancelled_df():
-	return pd.DataFrame([['A2', 'TestA2', 'Parent1', '2021-10-01', '2021-10-02', '2021-11-01', 'Strategic'],
-						 ['B1', 'TestB1', 'Parent2', '2021-12-01', '2021-12-15', '2021-12-20', 'Maintenance'],
-						 ['C3', 'TestC3', 'Parent3', '2021-01-01', '2021-05-01', '2021-06-01', 'Strategic'],
-						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2021-12-01', 'Enabler']],
-						 columns=['ID', 'Name', 'Parent', 'Ready', 'In Progress', 'Done', 'Cancelled', 'Type'])
+	return pd.DataFrame([['A2', 'TestA2', 'Parent1', '2021-10-01', '2021-10-02', '2021-11-01', '', 'Strategic'],
+						 ['B1', 'TestB1', 'Parent2', '2021-12-01', '2021-12-15', '2021-12-20', '', 'Maintenance'],
+						 ['C3', 'TestC3', 'Parent3', '2021-01-01', '2021-05-01', '2022-01-05', '', 'Strategic'],
+						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler']],
+						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
 
 
 @pytest.fixture()
@@ -42,18 +42,16 @@ def sprint_df():
 
 
 @pytest.fixture()
-def input_flow_calculator(sprint_df, mocker):
+def input_flow_calculator(sprint_df):
 	start_col = 'InProgress'
 	end_col = 'Done'
 	start_sprint = '1.1'
 	end_sprint = '1.2'
 	wip_limit = '10'
-	item_names = ''
+	item_names = 'Name'
 	categories = 'Type'
 	parent_toggle = False
 	parent_column = 'Parent'
-	# TODO: Fix this Mocker patch of the Globals object.
-	mocker.patch.object(input_flow_calculator.Globals.SPRINT_INFO_DATAFRAME, sprint_df)
 	return FlowCalcClass(start_col, end_col, start_sprint, end_sprint, wip_limit, item_names, categories,
 						 parent_toggle, parent_column)
 
@@ -61,15 +59,29 @@ def input_flow_calculator(sprint_df, mocker):
 ###################################
 # UNIT TESTS
 ###################################
-def test_remove_cancelled_rows(input_flow_calculator, flow_df, flow_no_cancelled_df, sprint_df):
+def test_remove_cancelled_and_null_rows(input_flow_calculator, flow_df, flow_no_cancelled_df):
 	# setup
 	# call function
-	result = input_flow_calculator.removed_cancelled_items(flow_df)
+	# mocker.patch('input_flow_calculator.get_sprint_dataframe', return_value=sprint_df)
+	result = input_flow_calculator.removed_cancelled_and_null_rows(flow_df)
 	# set expectation
 	expected = flow_no_cancelled_df
 	# assertion
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
+
+def test_prep_functions(input_flow_calculator, sprint_df, flow_df, mocker):
+	# setup
+	test_calculator = input_flow_calculator
+	mocker.patch('FlowCalcClass.get_sprint_dataframe', return_value=sprint_df)
+	mocker.patch('FlowCalcClass.get_flow_dataframe', return_value=flow_df)
+	test_calculator.prep_for_metrics()
+	# call function
+	result = test_calculator.errors_were_found()
+	# set expectation
+	expected = False
+	# assertion
+	assert result == expected
 
 """
 # Keeping this just so I remember how to snag from capsys if I need to see a print output
