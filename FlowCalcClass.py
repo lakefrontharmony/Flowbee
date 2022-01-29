@@ -39,9 +39,9 @@ class FlowCalcClass:
 		if self.prep_going_good:
 			self.clean_df = self.build_clean_dataframe(get_flow_dataframe())
 		if self.prep_going_good:
-			self.wip_df = self.build_wip_dataframe(get_flow_dataframe())
+			self.wip_df = self.build_wip_dataframe(get_flow_dataframe(), self.end_date)
 		if self.prep_going_good:
-			self.build_dates_dataframe()
+			self.dates_df = self.build_dates_dataframe(self.start_date, self.end_date)
 		if self.prep_going_good:
 			self.build_throughput_run_dataframe()
 		if self.prep_going_good & self.category_calc_toggle:
@@ -55,9 +55,9 @@ class FlowCalcClass:
 
 	def run_flow_metrics(self):
 		avg_lead_time = self.calculate_average_lead_time()
-		avg_throughput = self.calculate_average_throughput()
-		avg_wip = self.calculate_average_wip()
-		wip_violations = self.calculate_wip_violations()
+		avg_throughput = self.calculate_average_throughput(self.number_of_finished_items, self.number_of_days)
+		avg_wip = self.calculate_average_wip(self.dates_df, self.clean_df, self.wip_df)
+		wip_violations = self.calculate_wip_violations(self.dates_df)
 		flow_data = [[Globals.FLOW_METRIC_LEAD_TIME_KEY, avg_lead_time],
 					 [Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY, avg_throughput],
 					 [Globals.FLOW_METRIC_AVG_WIP_KEY, avg_wip],
@@ -120,7 +120,7 @@ class FlowCalcClass:
 	def build_clean_dataframe(self, in_df) -> pd.DataFrame:
 		return_df = in_df
 		# filter to only items which have not been cancelled
-		return_df = self.removed_cancelled_rows(return_df)
+		return_df = self.remove_cancelled_rows(return_df)
 
 		end_bool_series = pd.notnull(return_df[self.end_col])
 		return_df = return_df[end_bool_series]
@@ -157,7 +157,7 @@ class FlowCalcClass:
 		return_df.reset_index(drop=True, inplace=True)
 		return return_df
 
-	def removed_cancelled_rows(self, in_df: pd.DataFrame) -> pd.DataFrame:
+	def remove_cancelled_rows(self, in_df: pd.DataFrame) -> pd.DataFrame:
 		return_df = in_df.copy()
 		if 'Cancelled' in return_df:
 			cancelled_mask = return_df['Cancelled'] != 'Yes'
@@ -165,7 +165,7 @@ class FlowCalcClass:
 			return_df.reset_index(drop=True, inplace=True)
 		return return_df
 
-	def save_clean_completed_items_df(self, clean_df) -> pd.DataFrame:
+	def save_clean_completed_items_df(self, clean_df: pd.DataFrame) -> pd.DataFrame:
 		temp_df = clean_df.loc[:, [self.item_names_column, self.start_col, self.end_col]]
 		temp_df[self.start_col] = temp_df[self.start_col].astype(str)
 		temp_df[self.end_col] = temp_df[self.end_col].astype(str)
@@ -174,24 +174,25 @@ class FlowCalcClass:
 	# Build to only columns between start and end column
 	# Use only items that started before the end date and are still in progress (null on end column or ended after period)
 	# TODO: Add Parent Column to dataframe
-	def build_wip_dataframe(self, in_df) -> pd.DataFrame:
-		return_df = in_df
+	def build_wip_dataframe(self, in_df: pd.DataFrame, in_end_date: datetime) -> pd.DataFrame:
 		# filter to only items which have not been cancelled
-		return_df = self.removed_cancelled_rows(return_df)
+		return_df = self.remove_cancelled_rows(in_df)
 
 		temp_df = return_df.loc[:, [self.start_col, self.end_col, self.categories_column]]
-		temp_df = temp_df.apply(pd.to_datetime, errors='coerce')
-		date_mask = (temp_df[self.start_col] <= self.end_date) & (temp_df[self.end_col].isnull()) | \
-					((temp_df[self.start_col] <= self.end_date) & (temp_df[self.end_col] > self.end_date))
+		temp_df[self.start_col] = temp_df[self.start_col].apply(pd.to_datetime, errors='coerce')
+		temp_df[self.end_col] = temp_df[self.end_col].apply(pd.to_datetime, errors='coerce')
+		date_mask = (temp_df[self.start_col] <= in_end_date) & (temp_df[self.end_col].isnull()) | \
+					((temp_df[self.start_col] <= in_end_date) & (temp_df[self.end_col] > in_end_date))
 		return_df = temp_df.loc[date_mask]
+		return_df.reset_index(drop=True, inplace=True)
 
 		return return_df
 
 	# Build a dataframe for the dates within our range
-	def build_dates_dataframe(self):
-		rng = pd.date_range(self.start_date, self.end_date)
-		self.dates_df = pd.DataFrame({'Date': rng, 'WIP': 0})
+	def build_dates_dataframe(self, in_start_date: datetime, in_end_date: datetime) -> pd.DataFrame:
+		rng = pd.date_range(in_start_date, in_end_date)
 		self.prep_going_good = True
+		return pd.DataFrame({'Date': rng, 'WIP': 0})
 
 	# Build a Throughput_Run dataframe in the Globals file.
 	def build_throughput_run_dataframe(self):
@@ -252,22 +253,22 @@ class FlowCalcClass:
 
 	# Calculate the average number of items completed per week
 	# Count how many items finished, divide by number of days in period, then multiply by 7 (days)
-	def calculate_average_throughput(self):
+	def calculate_average_throughput(self, num_finished_items, num_days) -> np.float64:
 		self.calcs_going_good = True
-		return round((self.number_of_finished_items / self.number_of_days) * 7, 2)
+		return round((num_finished_items / num_days) * 7, 2)
 
 	# Calculate the daily average wip for each column and as a whole system.
 	# Check the clean_df for completed items, then the wip_df for in progress items.
-	def calculate_average_wip(self):
-		self.dates_df['WIP'] = self.dates_df.apply(lambda row: self.calc_wip_on_date(row, False), axis=1)
+	def calculate_average_wip(self, dates_df: pd.DataFrame, clean_df: pd.DataFrame, wip_df: pd.DataFrame):
+		dates_df['WIP'] = dates_df.apply(lambda row: self.calc_wip_on_date(row, clean_df, wip_df), axis=1)
 		self.calcs_going_good = True
-		return round(self.dates_df['WIP'].sum()/len(self.dates_df), 2)
+		return round(dates_df['WIP'].sum()/len(dates_df), 2)
 
 	# With the WIP limit known, calculate how many days were over that WIP limit
-	def calculate_wip_violations(self):
+	def calculate_wip_violations(self, dates_df):
 		self.calcs_going_good = True
-		matching_entries = self.dates_df['WIP'] > self.daily_wip_limit
-		return len(self.dates_df.loc[matching_entries])
+		matching_entries = dates_df['WIP'] > self.daily_wip_limit
+		return len(dates_df.loc[matching_entries])
 
 	# call function with np array of the categories
 	# once completed, add the work mix type to the Dataframe
@@ -300,11 +301,11 @@ class FlowCalcClass:
 	# =========================================
 	# INTERNAL FUNCTIONS
 	# =========================================
-	def calc_wip_on_date(self, row, calculate_categories):
-		found_completed_rows = (self.clean_df[self.start_col] <= row['Date']) & (self.clean_df[self.end_col] > row['Date'])
-		temp_df = self.clean_df.loc[found_completed_rows]
-		found_ip_rows = (self.wip_df[self.start_col] <= row['Date'])
-		temp_df_2 = self.wip_df.loc[found_ip_rows]
+	def calc_wip_on_date(self, row, clean_df, wip_df, calculate_categories=False):
+		found_completed_rows = (clean_df[self.start_col] <= row['Date']) & (clean_df[self.end_col] > row['Date'])
+		temp_df = clean_df.loc[found_completed_rows]
+		found_ip_rows = (wip_df[self.start_col] <= row['Date'])
+		temp_df_2 = wip_df.loc[found_ip_rows]
 		total_wip = len(temp_df) + len(temp_df_2)
 		return total_wip
 
@@ -324,8 +325,8 @@ class FlowCalcClass:
 
 
 def get_sprint_dataframe() -> pd.DataFrame:
-	return Globals.SPRINT_INFO_DATAFRAME
+	return Globals.SPRINT_INFO_DATAFRAME  # pragma: no cover
 
 
 def get_flow_dataframe() -> pd.DataFrame:
-	return Globals.INPUT_CSV_DATAFRAME
+	return Globals.INPUT_CSV_DATAFRAME  # pragma: no cover
