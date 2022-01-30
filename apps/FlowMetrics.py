@@ -53,21 +53,25 @@ def app():
 
     calculator = FlowCalcClass(start_col, end_col, start_sprint, end_sprint, daily_wip_limit, names_field, categories_field, False, '')
     calculator.prep_for_metrics()
-    if not Globals.GOOD_FOR_GO:
-        st.write(calculator.get_error_msgs())
+    if calculator.prep_errors_were_found():
+        st.header(calculator.get_error_msgs())
         return
+
     calculator.run_flow_metrics()
+    if calculator.calc_errors_were_found():
+        st.header('Errors were found during calculations')
+        return
 
     st.header('Assumptions made during calculations')
     st.write(calculator.get_flow_metric_assumptions())
     st.header('General Statistics of Metrics')
-    st.write(Globals.FLOW_METRIC_STATS.astype(str))
+    st.write(calculator.get_flow_metric_stats().astype(str))
     st.header('Completed Items')
     st.write(calculator.get_completed_item_names())
     st.header('Flow Metric Results')
-    st.write(Globals.FLOW_METRIC_RESULTS.astype(str))
+    st.write(calculator.get_flow_metric_results().astype(str))
     st.header('Categorical Results')
-    st.write(Globals.FLOW_METRIC_CATEGORY_RESULTS.astype(str))
+    st.write(calculator.get_flow_metric_category_results().astype(str))
 
 
 def display_example_csv_dataframe():

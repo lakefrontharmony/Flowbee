@@ -221,7 +221,7 @@ def test_prep_functions(input_flow_calculator, sprint_df, flow_input_df, mocker)
 	mocker.patch('FlowCalcClass.get_flow_dataframe', return_value=flow_input_df)
 	test_calculator.prep_for_metrics()
 	# call function
-	result = test_calculator.errors_were_found()
+	result = test_calculator.prep_errors_were_found()
 	# set expectation
 	expected = False
 	# assertion
@@ -258,6 +258,18 @@ def test_calculate_wip_violations(input_flow_calculator, final_dates_df):
 	expected = 2
 	# assertion
 	assert result == expected
+
+
+def test_calculate_average_lead_time(input_flow_calculator, flow_clean_df):
+	# setup
+	num_of_finished_items = len(flow_clean_df)
+	# call function
+	result = input_flow_calculator.calculate_average_lead_time(flow_clean_df, num_of_finished_items)
+	# set expectation
+	expected = 172.5
+	# assertion
+	assert result == expected
+
 
 """
 # Keeping this just so I remember how to snag from capsys if I need to see a print output
