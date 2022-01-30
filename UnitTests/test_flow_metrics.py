@@ -1,5 +1,6 @@
 import pytest
 import pandas as pd
+import numpy as np
 from datetime import datetime
 from FlowCalcClass import FlowCalcClass
 
@@ -58,9 +59,9 @@ def flow_completed_saved_items_df():
 # This is the dataframe coming out of the "build_clean_df" function
 @pytest.fixture()
 def flow_clean_df():
-	return pd.DataFrame([[datetime(2021, 5, 1), datetime(2022, 1, 5), 'Strategic'],
-						 [datetime(2021, 10, 6), datetime(2022, 1, 10), 'Enabler']],
-						 columns=['InProgress', 'Done', 'Type'])
+	return pd.DataFrame([[datetime(2021, 5, 1), datetime(2022, 1, 5), 'Strategic', 249.0],
+						 [datetime(2021, 10, 6), datetime(2022, 1, 10), 'Enabler', 96.0]],
+						 columns=['InProgress', 'Done', 'Type', 'lead_time'])
 
 
 # This is the dataframe that mimics the sprint input csv file
@@ -103,6 +104,25 @@ def final_dates_df():
 						 [datetime(2022, 1, 4), 5],
 						 [datetime(2022, 1, 5), 4]],
 						columns=['Date', 'WIP'])
+
+
+# This is the dataframe that represents a range of 2022-01-01 to 2022-01-05 with WIP for each date filled in.
+@pytest.fixture()
+def flow_metric_stats_df():
+	return pd.DataFrame([['Start Date', '2022-01-03'],
+						 ['End Date', '2022-01-30'],
+						 ['Days', 28],
+						 ['Completed Items', 2],
+						 ['Still In Progress', 3]],
+						columns=['Category', 'Value'])
+
+
+# This is the dataframe that represents a range of 2022-01-01 to 2022-01-05 with WIP for each date filled in.
+@pytest.fixture()
+def category_metrics_df():
+	return pd.DataFrame([['Strategic', 1, 249.0, 0.25, 50.0],
+						 ['Enabler', 1, 96.0, 0.25, 50.0]],
+						columns=['Category', 'Count', 'Avg Lead Time', 'Weekly Throughput', 'Work Mix %'])
 
 
 # This is the build of the FlowCalcClass
@@ -203,15 +223,41 @@ def test_build_dates_dataframe(input_flow_calculator, dates_df):
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-# def test_build_throughput_run_dataframe(input_flow_calculator):
-# 	pass
+def test_prep_categories(input_flow_calculator, flow_clean_df):
+	# setup
+	# call function
+	result = input_flow_calculator.prep_categories(flow_clean_df)
+	# set expectation
+	expected = flow_clean_df['Type'].unique()
+	# expected = np.array(['Strategic', 'Enabler'])
+	# assertion
+	assert np.testing.assert_equal(result, expected) is None
 
-# def test_prep_categories(input_flow_calculator):
-# 	pass
+
+def test_prep_categories_empty_result(input_flow_calculator):
+	# setup
+	fake_clean_flow_file = pd.DataFrame(columns=['Type'])
+	# call function
+	result = input_flow_calculator.prep_categories(fake_clean_flow_file)
+	# set expectation
+	expected = []
+	expected_category_toggle = False
+	# expected = np.array(['Strategic', 'Enabler'])
+	# assertion
+	assert np.testing.assert_equal(result, expected) is None
+	assert input_flow_calculator.category_calc_toggle == expected_category_toggle
 
 
-# def test_final_values_preparation(input_flow_calculator):
-# 	pass
+def test_final_values_preparation(input_flow_calculator, flow_metric_stats_df, flow_clean_df, wip_df):
+	# setup
+	start_date = datetime(2022, 1, 3)
+	end_date = datetime(2022, 1, 30)
+	# call function
+	result = input_flow_calculator.final_values_preparation(start_date, end_date, flow_clean_df, wip_df)
+	# set expectation
+	expected = flow_metric_stats_df
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
 def test_prep_functions(input_flow_calculator, sprint_df, flow_input_df, mocker):
@@ -267,6 +313,32 @@ def test_calculate_average_lead_time(input_flow_calculator, flow_clean_df):
 	result = input_flow_calculator.calculate_average_lead_time(flow_clean_df, num_of_finished_items)
 	# set expectation
 	expected = 172.5
+	# assertion
+	assert result == expected
+
+
+def test_calculate_category_metrics(input_flow_calculator, flow_clean_df, category_metrics_df, capsys):
+	# setup
+	categories = flow_clean_df['Type'].unique()
+	number_of_days = 28
+	# call function
+	result = input_flow_calculator.calculate_category_metrics(categories, flow_clean_df, number_of_days)
+	# set expectation
+	expected = category_metrics_df
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+def test_run_flow_metrics(input_flow_calculator, sprint_df, flow_input_df, mocker):
+	# setup
+	test_calculator = input_flow_calculator
+	mocker.patch('FlowCalcClass.get_sprint_dataframe', return_value=sprint_df)
+	mocker.patch('FlowCalcClass.get_flow_dataframe', return_value=flow_input_df)
+	test_calculator.prep_for_metrics()
+	test_calculator.run_flow_metrics()
+	# call function
+	result = test_calculator.calc_errors_were_found()
+	# set expectation
+	expected = False
 	# assertion
 	assert result == expected
 

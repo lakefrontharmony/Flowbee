@@ -29,6 +29,7 @@ class FlowCalcClass:
 		self.wip_df = None
 		self.dates_df = None
 		self.completed_items = None
+		self.flow_metric_categories = []
 		self.flow_metric_stats = pd.DataFrame()
 		self.flow_metric_results = pd.DataFrame()
 		self.flow_metric_category_results = pd.DataFrame()
@@ -46,9 +47,10 @@ class FlowCalcClass:
 		if self.prep_going_good:
 			self.dates_df = self.build_dates_dataframe(self.start_date, self.end_date)
 		if self.prep_going_good & self.category_calc_toggle:
-			self.prep_categories(self.clean_df)
+			self.flow_metric_categories = self.prep_categories(self.clean_df)
 		if self.prep_going_good:
-			self.final_values_preparation()
+			self.flow_metric_stats = self.final_values_preparation(self.start_date, self.end_date,
+																   self.clean_df, self.wip_df)
 		if self.prep_going_good:
 			Globals.GOOD_FOR_GO = True
 		else:
@@ -67,21 +69,22 @@ class FlowCalcClass:
 		self.flow_metric_results = pd.DataFrame(flow_data, columns=['Category', 'Value'])
 
 		if self.calcs_going_good & self.category_calc_toggle:
-			self.calculate_category_metrics()
+			self.flow_metric_category_results = self.calculate_category_metrics(self.flow_metric_categories,
+																				self.clean_df, self.number_of_days)
 		if self.parent_toggle:
 			self.calculate_average_parent_wip()
 
 	# This is a check for errors.
 	# Return True if errors were found, False if there were no errors
 	def prep_errors_were_found(self) -> bool:
-		if self.prep_going_good:
-			return False
-		return True
+		if self.prep_going_good:  # pragma: no cover
+			return False  # pragma: no cover
+		return True  # pragma: no cover
 
 	def calc_errors_were_found(self) -> bool:
-		if self.calcs_going_good:
-			return False
-		return True
+		if self.calcs_going_good:  # pragma: no cover
+			return False  # pragma: no cover
+		return True  # pragma: no cover
 
 	def get_error_msgs(self) -> list:
 		return self.errors  # pragma: no cover
@@ -212,29 +215,27 @@ class FlowCalcClass:
 	# Build a Numpy Array of the categories in the main file.
 	# Note that this may have categories outside of the selected date range, so when processing, make sure you check
 	# for no values matching the category.
-	def prep_categories(self, flow_array: pd.DataFrame):
-		self.flow_metric_category_results = pd.DataFrame(columns=[Globals.FLOW_METRIC_CATEGORY_KEY,
-																	 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY,
-																	 Globals.FLOW_METRIC_LEAD_TIME_KEY,
-																	 Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY])
-		Globals.FLOW_METRIC_CATEGORIES = flow_array[self.categories_column].unique()
-		if len(Globals.FLOW_METRIC_CATEGORIES) == 0:
+	def prep_categories(self, flow_array: pd.DataFrame) -> np.array:
+		flow_metric_categories = flow_array[self.categories_column].unique()
+		if len(flow_metric_categories) == 0:
 			self.category_calc_toggle = False
-			return
 		self.prep_going_good = True
+		return flow_metric_categories
 
 	# Any final value preparations that are helpful for future calculations
-	def final_values_preparation(self):
-		self.number_of_finished_items = len(self.clean_df)
+	def final_values_preparation(self, start_date: datetime.date, end_date: datetime.date,
+								 clean_df: pd.DataFrame, wip_df: pd.DataFrame) -> pd.DataFrame:
+		self.number_of_finished_items = len(clean_df)
 		self.number_of_days = \
-			((self.end_date - self.start_date) / np.timedelta64(1, 'D')) + 1
-		stats_data = [[Globals.FLOW_METRIC_START_DATE_KEY, datetime.strftime(self.start_date, '%Y-%m-%d')],
-					  [Globals.FLOW_METRIC_END_DATE_KEY, datetime.strftime(self.end_date, '%Y-%m-%d')],
+			((np.datetime64(end_date) - np.datetime64(start_date)) / np.timedelta64(1, 'D')) + 1
+			# ((end_date - start_date) / np.timedelta64(1, 'D')) + 1
+		stats_data = [[Globals.FLOW_METRIC_START_DATE_KEY, datetime.strftime(start_date, '%Y-%m-%d')],
+					  [Globals.FLOW_METRIC_END_DATE_KEY, datetime.strftime(end_date, '%Y-%m-%d')],
 					  [Globals.FLOW_METRIC_DAYS_KEY, int(self.number_of_days)],
 					  [Globals.FLOW_METRIC_COMPLETED_ITEMS_KEY, self.number_of_finished_items],
-					  [Globals.FLOW_METRIC_IP_ITEMS_KEY, len(self.wip_df)]
+					  [Globals.FLOW_METRIC_IP_ITEMS_KEY, len(wip_df)]
 		]
-		self.flow_metric_stats = pd.DataFrame(stats_data, columns=['Category', 'Value'])
+		return pd.DataFrame(stats_data, columns=['Category', 'Value'])
 
 	# =========================================
 	# FLOW METRICS FUNCTIONS
@@ -272,15 +273,25 @@ class FlowCalcClass:
 
 	# call function with np array of the categories
 	# once completed, add the work mix type to the Dataframe
-	def calculate_category_metrics(self):
-		category_function = np.frompyfunc(self.calc_category_details, 1, 0)
-		category_function(Globals.FLOW_METRIC_CATEGORIES)
-		number_completed = self.flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY].sum()
-		self.flow_metric_category_results[Globals.FLOW_METRIC_WORK_MIX_KEY] = \
-			(self.flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY] / number_completed).astype(float)
-		self.flow_metric_category_results[Globals.FLOW_METRIC_WORK_MIX_KEY] *= 100
-		self.flow_metric_category_results = \
-			self.flow_metric_category_results.round({f'{Globals.FLOW_METRIC_WORK_MIX_KEY}': 2})
+	def calculate_category_metrics(self, in_flow_metric_categories: np.array,
+								   clean_df: pd.DataFrame, number_of_days: int) -> pd.DataFrame:
+		flow_metric_category_results = pd.DataFrame(columns=[Globals.FLOW_METRIC_CATEGORY_KEY,
+																	 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY,
+																	 Globals.FLOW_METRIC_LEAD_TIME_KEY,
+																	 Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY])
+		for category in in_flow_metric_categories:
+			flow_metric_category_results = self.calc_category_details(category, clean_df,
+																	  number_of_days, flow_metric_category_results)
+		# somewhere, the int in the count column is becoming a class object. This returns it to an int.
+		flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY] = \
+			flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY].astype(int)
+		number_completed = flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY].sum()
+		flow_metric_category_results[Globals.FLOW_METRIC_WORK_MIX_KEY] = \
+			(flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY] / number_completed).astype(float)
+		flow_metric_category_results[Globals.FLOW_METRIC_WORK_MIX_KEY] *= 100
+		flow_metric_category_results[Globals.FLOW_METRIC_WORK_MIX_KEY] = \
+			flow_metric_category_results[Globals.FLOW_METRIC_WORK_MIX_KEY].round(decimals=2)
+		return flow_metric_category_results
 
 	# Get unique list of parent items
 	# Find the min start date for each parent item and the max end date (or end of period)
@@ -309,19 +320,21 @@ class FlowCalcClass:
 		total_wip = len(temp_df) + len(temp_df_2)
 		return total_wip
 
-	def calc_category_details(self, category: str):
-		matching_clean_entries = self.clean_df[self.categories_column] == category
-		temp_clean_df = self.clean_df.loc[matching_clean_entries]
+	def calc_category_details(self, category: str, clean_df: pd.DataFrame,
+							  number_of_days: int, flow_metric_category_results) -> pd.DataFrame:
+		matching_clean_entries = clean_df[self.categories_column] == category
+		temp_clean_df = clean_df.loc[matching_clean_entries]
 		category_count = len(temp_clean_df)
 		if category_count > 0:
 			avg_lead_time = round(temp_clean_df['lead_time'].sum() / category_count, 2)
-			avg_throughput = round((category_count / self.number_of_days) * 7, 2)
-			self.flow_metric_category_results = \
-				self.flow_metric_category_results.append({Globals.FLOW_METRIC_CATEGORY_KEY: category,
+			avg_throughput = round((category_count / number_of_days) * 7, 2)
+			flow_metric_category_results = \
+				flow_metric_category_results.append({Globals.FLOW_METRIC_CATEGORY_KEY: category,
 															 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY: category_count,
 															 Globals.FLOW_METRIC_LEAD_TIME_KEY: avg_lead_time,
 															 Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY: avg_throughput},
 															ignore_index=True)
+		return flow_metric_category_results
 
 
 def get_sprint_dataframe() -> pd.DataFrame:
