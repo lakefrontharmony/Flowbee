@@ -273,18 +273,30 @@ class FlowCalcClass:
 
 	# call function with np array of the categories
 	# once completed, add the work mix type to the Dataframe
-	def calculate_category_metrics(self, in_flow_metric_categories: np.array,
+	def calculate_category_metrics(self, in_categories: np.array,
 								   clean_df: pd.DataFrame, number_of_days: int) -> pd.DataFrame:
 		flow_metric_category_results = pd.DataFrame(columns=[Globals.FLOW_METRIC_CATEGORY_KEY,
 																	 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY,
 																	 Globals.FLOW_METRIC_LEAD_TIME_KEY,
 																	 Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY])
-		for category in in_flow_metric_categories:
-			flow_metric_category_results = self.calc_category_details(category, clean_df,
-																	  number_of_days, flow_metric_category_results)
-		# somewhere, the int in the count column is becoming a class object. This returns it to an int.
+		category_series = np.empty((0, 4))
+		for category in in_categories:
+			category_results = self.calc_category_details(category, clean_df, number_of_days)
+			category_series = np.append(category_series, [category_results], axis=0)
+		flow_metric_category_results = pd.DataFrame(category_series, columns=[Globals.FLOW_METRIC_CATEGORY_KEY,
+																	 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY,
+																	 Globals.FLOW_METRIC_LEAD_TIME_KEY,
+																	 Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY])
+		# cast the columns to explicit types as they start off as "object" types
+		flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_KEY] = \
+			flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_KEY].astype(str)
 		flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY] = \
 			flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY].astype(int)
+		flow_metric_category_results[Globals.FLOW_METRIC_LEAD_TIME_KEY] = \
+			flow_metric_category_results[Globals.FLOW_METRIC_LEAD_TIME_KEY].astype(float)
+		flow_metric_category_results[Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY] = \
+			flow_metric_category_results[Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY].astype(float)
+
 		number_completed = flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY].sum()
 		flow_metric_category_results[Globals.FLOW_METRIC_WORK_MIX_KEY] = \
 			(flow_metric_category_results[Globals.FLOW_METRIC_CATEGORY_COUNT_KEY] / number_completed).astype(float)
@@ -320,21 +332,16 @@ class FlowCalcClass:
 		total_wip = len(temp_df) + len(temp_df_2)
 		return total_wip
 
-	def calc_category_details(self, category: str, clean_df: pd.DataFrame,
-							  number_of_days: int, flow_metric_category_results) -> pd.DataFrame:
+	def calc_category_details(self, category: str, clean_df: pd.DataFrame, number_of_days: int) -> np.array:
 		matching_clean_entries = clean_df[self.categories_column] == category
 		temp_clean_df = clean_df.loc[matching_clean_entries]
 		category_count = len(temp_clean_df)
-		if category_count > 0:
-			avg_lead_time = round(temp_clean_df['lead_time'].sum() / category_count, 2)
-			avg_throughput = round((category_count / number_of_days) * 7, 2)
-			flow_metric_category_results = \
-				flow_metric_category_results.append({Globals.FLOW_METRIC_CATEGORY_KEY: category,
-															 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY: category_count,
-															 Globals.FLOW_METRIC_LEAD_TIME_KEY: avg_lead_time,
-															 Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY: avg_throughput},
-															ignore_index=True)
-		return flow_metric_category_results
+		if category_count == 0:
+			return np.array([])
+		avg_lead_time = round(temp_clean_df['lead_time'].sum() / category_count, 2)
+		avg_throughput = round((category_count / number_of_days) * 7, 2)
+		return_array = np.array([category, category_count, avg_lead_time, avg_throughput])
+		return return_array
 
 
 def get_sprint_dataframe() -> pd.DataFrame:
