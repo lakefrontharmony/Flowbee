@@ -141,6 +141,10 @@ class ChartBuilderClass:
 
 		start_bool_series = pd.notnull(return_df[self.start_col])
 		return_df = return_df.loc[start_bool_series]
+		# since the date columns have not been converted to dates yet, it was not seeing an empty string as null.
+		# Added this statement in to get rid of things that have not yet reached the start column.
+		start_bool_series = return_df[self.start_col].ne('')
+		return_df = return_df.loc[start_bool_series]
 
 		if return_df is None:
 			self.errors.append('No in-progress data to chart from the input set. ' 
@@ -184,7 +188,7 @@ class ChartBuilderClass:
 
 	def filter_clean_df_to_start_date(self, in_df: pd.DataFrame) -> pd.DataFrame:
 		return_df = in_df.copy()
-		include_mask = (pd.isnull(return_df[self.end_col])) | (return_df[self.end_col] >= pd.Timestamp(self.start_date))
+		include_mask = (pd.isnull(return_df[self.end_col])) | (return_df[self.end_col] >= self.start_date)
 		return_df = return_df.loc[include_mask]
 		# give a fresh index to the dataframe
 		return_df.reset_index(drop=True, inplace=True)

@@ -143,8 +143,14 @@ class FlowCalcClass:
 		end_bool_series = pd.notnull(return_df[self.end_col])
 		return_df = return_df[end_bool_series]
 
+		end_bool_series = return_df[self.end_col].ne('')
+		return_df = return_df.loc[end_bool_series]
+
 		start_bool_series = pd.notnull(return_df[self.start_col])
 		return_df = return_df[start_bool_series]
+
+		start_bool_series = return_df[self.start_col].ne('')
+		return_df = return_df.loc[start_bool_series]
 
 		if return_df is None:
 			self.prep_going_good = False

@@ -13,10 +13,12 @@ from unittest import mock
 ###################################
 # FIXTURES
 ###################################
+# This is the clean dataframe filtered to a start date for the ChartBuilderClass
 @pytest.fixture()
-def flow_clean_filtered_to_start_date_df():
-	return pd.DataFrame([[datetime(2021, 10, 6), datetime(2022, 1, 10), 'Enabler', 96.0]],
-						columns=['InProgress', 'Done', 'Type', 'lead_time'])
+def chart_clean_filtered_to_start_date_df():
+	return pd.DataFrame([['TestZ5', date(2021, 10, 6), date(2022, 1, 10), 4],
+						 ['TestZ7', date(2022, 1, 3), pd.NaT, 4]],
+						columns=['Name', '1_InProgress', '2_Done', 'WIPLimit'])
 
 
 # This is the clean dataframe for the ChartBuilderClass
@@ -146,8 +148,20 @@ def test_remove_cancelled_rows(input_chart_builder, flow_input_df, flow_no_cance
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-def test_filtering_to_start_date(input_chart_builder, flow_clean_alt_date_range_testing_df,
-								 dates_filtered_df):
+def test_filtering_clean_df_to_start_date(input_chart_builder, flow_input_df, chart_clean_df,
+										  chart_clean_filtered_to_start_date_df):
+	# setup
+	input_chart_builder.build_clean_df(flow_input_df)
+	# call function
+	result = input_chart_builder.filter_clean_df_to_start_date(chart_clean_df)
+	# set expectation
+	expected = chart_clean_filtered_to_start_date_df
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+def test_filtering_dates_df_to_start_date(input_chart_builder, flow_clean_alt_date_range_testing_df,
+										  dates_filtered_df):
 	# setup
 	end_date = date(2022, 2, 3)
 	# call function
@@ -158,8 +172,8 @@ def test_filtering_to_start_date(input_chart_builder, flow_clean_alt_date_range_
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-def test_not_filtering_to_start_date(input_chart_builder, flow_clean_alt_date_range_testing_df,
-								 dates_not_filtered_df):
+def test_not_filtering_dates_df_to_start_date(input_chart_builder, flow_clean_alt_date_range_testing_df,
+											  dates_not_filtered_df):
 	# setup
 	end_date = date(2022, 2, 3)
 	input_chart_builder.use_start_date = False
