@@ -13,29 +13,6 @@ from FlowCalcClass import FlowCalcClass
 ###################################
 # FIXTURES
 ###################################
-# This is the dataframe that mimics an input file (with column names already stripped of spaces)
-@pytest.fixture()
-def flow_input_df():
-	return pd.DataFrame([['A1', 'TestA1', 'Parent1', '2021-11-01', '2021-11-10', '2021-12-01', 'Yes', 'Strategic'],
-						 ['A2', 'TestA2', 'Parent1', '2021-10-01', '2021-10-02', '2021-11-01', '', 'Strategic'],
-						 ['B1', 'TestB1', 'Parent2', '2021-12-01', '2021-12-15', '2021-12-20', '', 'Maintenance'],
-						 ['C3', 'TestC3', 'Parent3', '2021-01-01', '2021-05-01', '2022-01-05', '', 'Strategic'],
-						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler'],
-						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-03', '', '', 'Strategic']],
-						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
-
-
-# This is the dataframe after removing cancelled items
-@pytest.fixture()
-def flow_no_cancelled_df():
-	return pd.DataFrame([['A2', 'TestA2', 'Parent1', '2021-10-01', '2021-10-02', '2021-11-01', '', 'Strategic'],
-						 ['B1', 'TestB1', 'Parent2', '2021-12-01', '2021-12-15', '2021-12-20', '', 'Maintenance'],
-						 ['C3', 'TestC3', 'Parent3', '2021-01-01', '2021-05-01', '2022-01-05', '', 'Strategic'],
-						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler'],
-						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-03', '', '', 'Strategic']],
-						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
-
-
 # This is the dataframe that is being sent in to the function to save off completed items.
 @pytest.fixture()
 def flow_completed_df():
@@ -54,14 +31,6 @@ def flow_completed_saved_items_df():
 						 ['TestC3', '2021-05-01', '2022-01-05'],
 						 ['TestZ5', '2021-10-06', '2022-01-10']],
 						 columns=['Name', 'InProgress', 'Done'])
-
-
-# This is the dataframe coming out of the "build_clean_df" function
-@pytest.fixture()
-def flow_clean_df():
-	return pd.DataFrame([[datetime(2021, 5, 1), datetime(2022, 1, 5), 'Strategic', 249.0],
-						 [datetime(2021, 10, 6), datetime(2022, 1, 10), 'Enabler', 96.0]],
-						 columns=['InProgress', 'Done', 'Type', 'lead_time'])
 
 
 # This is the dataframe that mimics the sprint input csv file

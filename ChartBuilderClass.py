@@ -38,13 +38,13 @@ class ChartBuilderClass:
 	# EXTERNALLY CALLED FUNCTIONS
 	# =========================================
 	def prep_for_charting(self):
-		self.build_clean_df()
+		self.clean_df = self.build_clean_df(get_flow_dataframe())
 		if self.prep_going_good & self.use_start_date:
-			self.filter_clean_df_to_start_date()
+			self.clean_df = self.filter_clean_df_to_start_date(self.clean_df)
 		if self.prep_going_good:
-			self.build_dates_df()
+			self.dates_df = self.build_dates_df(self.clean_df, date.today())
 		if self.prep_going_good:
-			self.build_completed_df()
+			self.completed_items_df = self.build_completed_df(self.clean_df)
 		if self.prep_going_good:
 			self.calc_completed_stats()
 		if self.prep_going_good:
@@ -127,74 +127,84 @@ class ChartBuilderClass:
 	# =========================================
 	# Build dataframe with non-null dates in end-column and start-column (include all columns between those two)
 	# Convert date columns to datetime elements.
-	def build_clean_df(self):
-		self.clean_df = Globals.INPUT_CSV_DATAFRAME
+	def build_clean_df(self, in_df: pd.DataFrame) -> pd.DataFrame:
+		return_df = in_df.copy()
+		# filter to only items which have not been cancelled
+		return_df = self.remove_cancelled_rows(return_df)
 
-		# filter to only items which have not been cancelled and items which have at least reached your start column
-		if 'Cancelled' in self.clean_df:
-			cancelled_mask = self.clean_df['Cancelled'] != 'Yes'
-			self.clean_df = self.clean_df.loc[cancelled_mask]
-		start_idx = self.clean_df.columns.get_loc(self.start_col)
-		end_idx = self.clean_df.columns.get_loc(self.end_col)
+		start_idx = return_df.columns.get_loc(self.start_col)
+		end_idx = return_df.columns.get_loc(self.end_col)
 		if start_idx >= end_idx:
 			self.errors.append('The End Status column must be AFTER the Start Status column')
 			self.prep_going_good = False
-			return
+			return pd.DataFrame()
 
-		start_bool_series = pd.notnull(self.clean_df[self.start_col])
-		self.clean_df = self.clean_df.loc[start_bool_series]
+		start_bool_series = pd.notnull(return_df[self.start_col])
+		return_df = return_df.loc[start_bool_series]
 
-		if self.clean_df is None:
-			self.errors.append('No in-progress data to chart from the input set. '
+		if return_df is None:
+			self.errors.append('No in-progress data to chart from the input set. ' 
 							   'Verify there are valid dates in input file')
 			self.prep_going_good = False
-			return
+			return pd.DataFrame()
 
 		# convert date columns to date elements (NOT DATETIME)
-		test_df = self.clean_df.loc[:, self.start_col: self.end_col]
+		test_df = return_df.loc[:, self.start_col: self.end_col]
 		test_df = test_df.loc[:, self.start_col: self.end_col].applymap(lambda x: pd.to_datetime(x, errors='coerce').date())
 
 		length_check = test_df.dropna(subset=[self.start_col])
 		if len(length_check.index) == 0:
 			self.errors.append('There are no valid entries using this Start Status column')
 			self.prep_going_good = False
-			return
+			return pd.DataFrame()
 
 		test_df = self.fillna_dates(test_df)
 		test_df.columns = \
 			[f'{i}_{x}' for i, x in enumerate(test_df.columns, 1)]
 		self.start_col = test_df.columns[0]
 		self.end_col = test_df.columns[-1]
-		self.clean_df = pd.concat([self.clean_df.loc[:, self.name_col].to_frame(),
+		return_df = pd.concat([return_df.loc[:, self.name_col].to_frame(),
 								   test_df], axis=1)
-		self.clean_df['WIPLimit'] = self.wip_limit
+		return_df['WIPLimit'] = self.wip_limit
 
-		self.date_col_names = self.clean_df.loc[:, self.start_col: self.end_col].columns.tolist()
+		self.date_col_names = return_df.loc[:, self.start_col: self.end_col].columns.tolist()
+
 		# give a fresh index to the dataframe
-		self.clean_df.reset_index(drop=True, inplace=True)
+		return_df.reset_index(drop=True, inplace=True)
 		self.prep_going_good = True
+		return return_df
 
-	def filter_clean_df_to_start_date(self):
-		include_mask = (pd.isnull(self.clean_df[self.end_col])) | (self.clean_df[self.end_col] >= pd.Timestamp(self.start_date))
-		self.clean_df = self.clean_df.loc[include_mask]
+	def remove_cancelled_rows(self, in_df: pd.DataFrame) -> pd.DataFrame:
+		return_df = in_df.copy()
+		if 'Cancelled' in return_df:
+			cancelled_mask = return_df['Cancelled'] != 'Yes'
+			return_df = return_df.loc[cancelled_mask]
+			return_df.reset_index(drop=True, inplace=True)
+		return return_df
+
+	def filter_clean_df_to_start_date(self, in_df: pd.DataFrame) -> pd.DataFrame:
+		return_df = in_df.copy()
+		include_mask = (pd.isnull(return_df[self.end_col])) | (return_df[self.end_col] >= pd.Timestamp(self.start_date))
+		return_df = return_df.loc[include_mask]
 		# give a fresh index to the dataframe
-		self.clean_df.reset_index(drop=True, inplace=True)
+		return_df.reset_index(drop=True, inplace=True)
+		return return_df
 
-	def build_dates_df(self):
-		min_date = min(self.clean_df[self.start_col])
+	def build_dates_df(self, in_df: pd.DataFrame, end_date: datetime.date) -> pd.DataFrame:
+		min_date = min(in_df[self.start_col])
 		if self.use_start_date:
 			min_date = self.start_date
-		rng = pd.date_range(min_date, date.today())
+		rng = pd.date_range(min_date, end_date)
 		# NOTE: A range creates a datetime list and many of the other dataframes are storing dates.
-		self.dates_df = pd.DataFrame({'Date': rng, 'WIP': 0, 'Throughput': 0, 'Avg Cycle Time': 0})
-
+		return_dates_df = pd.DataFrame({'Date': rng, 'WIP': 0, 'Throughput': 0, 'Avg Cycle Time': 0})
 		self.prep_going_good = True
+		return return_dates_df
 
-	def build_completed_df(self):
-		completed_mask = pd.notnull(self.clean_df[self.end_col])
-		self.completed_items_df = self.clean_df.loc[completed_mask].copy()
-
+	def build_completed_df(self, in_df: pd.DataFrame) -> pd.DataFrame:
+		completed_mask = pd.notnull(in_df[self.end_col])
+		completed_items_df = in_df.loc[completed_mask]
 		self.prep_going_good = True
+		return completed_items_df
 
 	def calc_completed_stats(self):
 		cycle_time_col = (self.completed_items_df[self.end_col] - self.completed_items_df[self.start_col]).dt.days
@@ -318,3 +328,7 @@ class ChartBuilderClass:
 	def fillna_dates(self, in_df: pd.DataFrame) -> pd.DataFrame:
 		temp_df = in_df.fillna(axis=1, method='bfill')
 		return temp_df
+
+
+def get_flow_dataframe() -> pd.DataFrame:
+	return Globals.INPUT_CSV_DATAFRAME  # pragma: no cover

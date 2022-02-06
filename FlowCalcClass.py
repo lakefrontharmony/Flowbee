@@ -136,7 +136,7 @@ class FlowCalcClass:
 	# Filter to only entries within the appropriate date range.
 	# TODO: Add Parent Column to dataframe
 	def build_clean_dataframe(self, in_df) -> pd.DataFrame:
-		return_df = in_df
+		return_df = in_df.copy()
 		# filter to only items which have not been cancelled
 		return_df = self.remove_cancelled_rows(return_df)
 
