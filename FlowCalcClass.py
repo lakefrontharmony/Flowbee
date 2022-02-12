@@ -288,7 +288,8 @@ class FlowCalcClass:
 		category_series = np.empty((0, 4))
 		for category in in_categories:
 			category_results = self.calc_category_details(category, clean_df, number_of_days)
-			category_series = np.append(category_series, [category_results], axis=0)
+			if category_results.size > 0:
+				category_series = np.append(category_series, [category_results], axis=0)
 		flow_metric_category_results = pd.DataFrame(category_series, columns=[Globals.FLOW_METRIC_CATEGORY_KEY,
 																	 Globals.FLOW_METRIC_CATEGORY_COUNT_KEY,
 																	 Globals.FLOW_METRIC_LEAD_TIME_KEY,
