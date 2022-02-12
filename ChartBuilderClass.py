@@ -115,10 +115,10 @@ class ChartBuilderClass:
 		assumptions = [['Phases of your flow were sequential columns between the specified start/end columns.'],  # pragma: no cover
 					   ['Flow phase columns only contained valid dates.'],  # pragma: no cover
 					   ['Any gaps in dates between phases were back-filled from the next valid date.']]  # pragma: no cover
-		if 'Cancelled' in Globals.INPUT_CSV_DATAFRAME:  # pragma: no cover
+		if ('Cancelled' in Globals.INPUT_CSV_DATAFRAME) | ('Status' in Globals.INPUT_CSV_DATAFRAME):  # pragma: no cover
 			assumptions.append(['Cancelled items were excluded from calculations.'])  # pragma: no cover
 		else:  # pragma: no cover
-			assumptions.append(['No cancelled column was found. (Column must be titled "Cancelled")'])  # pragma: no cover
+			assumptions.append(['No cancelled column was found. (Column must be titled "Cancelled" or "Status")'])  # pragma: no cover
 		assumptions_df = pd.DataFrame(assumptions, columns=['Assumption'])  # pragma: no cover
 		return assumptions_df  # pragma: no cover
 
@@ -181,7 +181,11 @@ class ChartBuilderClass:
 	def remove_cancelled_rows(self, in_df: pd.DataFrame) -> pd.DataFrame:
 		return_df = in_df.copy()
 		if 'Cancelled' in return_df:
-			cancelled_mask = return_df['Cancelled'] != 'Yes'
+			cancelled_mask = (return_df['Cancelled'] != 'Yes') & (return_df['Cancelled'] != 'Cancelled')
+			return_df = return_df.loc[cancelled_mask]
+			return_df.reset_index(drop=True, inplace=True)
+		elif 'Status' in return_df:
+			cancelled_mask = (return_df['Status'] != 'Yes') & (return_df['Status'] != 'Cancelled')
 			return_df = return_df.loc[cancelled_mask]
 			return_df.reset_index(drop=True, inplace=True)
 		return return_df

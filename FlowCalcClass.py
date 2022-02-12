@@ -184,7 +184,11 @@ class FlowCalcClass:
 	def remove_cancelled_rows(self, in_df: pd.DataFrame) -> pd.DataFrame:
 		return_df = in_df.copy()
 		if 'Cancelled' in return_df:
-			cancelled_mask = return_df['Cancelled'] != 'Yes'
+			cancelled_mask = (return_df['Cancelled'] != 'Yes') & (return_df['Cancelled'] != 'Cancelled')
+			return_df = return_df.loc[cancelled_mask]
+			return_df.reset_index(drop=True, inplace=True)
+		elif 'Status' in return_df:
+			cancelled_mask = (return_df['Status'] != 'Yes') & (return_df['Status'] != 'Cancelled')
 			return_df = return_df.loc[cancelled_mask]
 			return_df.reset_index(drop=True, inplace=True)
 		return return_df

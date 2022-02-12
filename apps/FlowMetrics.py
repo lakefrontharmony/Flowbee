@@ -78,11 +78,13 @@ def display_example_csv_dataframe():
     st.write('You can as many date columns as your process needs, but they must be sequential and grouped together '
              '(no other columns between date columns).')
     st.write('You can also add additional columns for grouping or naming')
+    st.write('Cancelled items should be denoted with either a "Cancelled" column, or a "Status" column which has'
+             '"Yes" or "Cancelled" for the applicable rows.')
     example_df = pd.DataFrame([['Name of item', 'In Progress Date (YYYY-MM-DD)', 'Done Date (YYYY-MM-DD)',
                                 'Yes or Blank', 'Category Name'],
                                ['Improve Sales', '2021-12-15', '2022-01-15', '', 'Strategic'],
                                ['Decrease Call Return Time', '2021-06-20', '2021-07-15', 'Yes', 'Maintenance']],
-                              columns=['Name', 'In Progress', 'Done', 'Cancelled?', 'Grouping'])
+                              columns=['Name', 'In Progress', 'Done', 'Cancelled', 'Grouping'])
     st.write(example_df)
 
 
