@@ -34,6 +34,10 @@ def app():
 		st.write('Complete the form on the sidebar to view charts.')
 		return
 
+	if start_col == end_col:
+		st.write('Please make sure the Start and End Status Columns are different')
+		return
+
 	# This markdown fixes the tooltip overlay for charts when you go to full screen mode.
 	st.markdown('<style>#vg-tooltip-element{z-index: 1000051}</style>',
 				unsafe_allow_html=True)

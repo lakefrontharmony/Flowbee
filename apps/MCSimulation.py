@@ -34,6 +34,10 @@ def app():
         st.write('Complete the information on the sidebar to see results of a Monte Carlo simulation')
         return
 
+    if start_col == end_col:
+        st.write('Please make sure the Start and End Status Columns are different')
+        return
+
     simulator = SimulationCalcClass(hist_duration, start_col, end_col, str(sim_start_date), str(sim_end_date), items_to_complete)
     simulator.prep_for_simulation()
     if not Globals.GOOD_FOR_GO:
