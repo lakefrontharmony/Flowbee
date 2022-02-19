@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from datetime import date, timedelta
 from FlowCalcClass import FlowCalcClass
 import Globals
 
@@ -16,29 +17,31 @@ def app():
         display_example_csv_dataframe()
         return
 
-    sprint_info_file = st.sidebar.file_uploader("Select Sprint Info File", type='csv')
-    if sprint_info_file is None:
-        with open('Files/SprintData.csv') as file:
-            Globals.SPRINT_INFO_DATAFRAME = pd.read_csv(file)
-    else:
-        Globals.SPRINT_INFO_DATAFRAME = pd.read_csv(sprint_info_file)
+    # sprint_info_file = st.sidebar.file_uploader("Select Sprint Info File", type='csv')
+    # if sprint_info_file is None:
+    #    with open('Files/SprintData.csv') as file:
+    #         Globals.SPRINT_INFO_DATAFRAME = pd.read_csv(file)
+    # else:
+    #     Globals.SPRINT_INFO_DATAFRAME = pd.read_csv(sprint_info_file)
 
-    Globals.SPRINT_INFO_DATAFRAME.columns = Globals.SPRINT_INFO_DATAFRAME.columns.str.replace(' ', '')
-    try:
-        Globals.SPRINT_INFO_DATAFRAME['StartDate'] = pd.to_datetime(Globals.SPRINT_INFO_DATAFRAME['StartDate'],
-                                                                    format='%Y-%m-%d')
-        Globals.SPRINT_INFO_DATAFRAME['EndDate'] = pd.to_datetime(Globals.SPRINT_INFO_DATAFRAME['EndDate'],
-                                                                  format='%Y-%m-%d')
-    except ValueError:
-        st.write('Error parsing Sprint Data Dates. Make sure dates are YYYY-MM-DD format.')
-        return
+    # Globals.SPRINT_INFO_DATAFRAME.columns = Globals.SPRINT_INFO_DATAFRAME.columns.str.replace(' ', '')
+    # try:
+    #     Globals.SPRINT_INFO_DATAFRAME['StartDate'] = pd.to_datetime(Globals.SPRINT_INFO_DATAFRAME['StartDate'],
+    #                                                                format='%Y-%m-%d')
+    #     Globals.SPRINT_INFO_DATAFRAME['EndDate'] = pd.to_datetime(Globals.SPRINT_INFO_DATAFRAME['EndDate'],
+    #                                                               format='%Y-%m-%d')
+    # except ValueError:
+    #     st.write('Error parsing Sprint Data Dates. Make sure dates are YYYY-MM-DD format.')
+    #     return
 
     flow_form = st.sidebar.form('Monte Carlo Submit')
     start_col = flow_form.selectbox('Choose Start Status', Globals.INPUT_CSV_DATAFRAME.columns)
     end_col = flow_form.selectbox('Choose End Status', Globals.INPUT_CSV_DATAFRAME.columns)
-    Globals.SPRINT_INFO_DATAFRAME.sort_values(by=['StartDate'], ascending=False, inplace=True, ignore_index=True)
-    start_sprint = flow_form.selectbox('Choose Start Sprint', Globals.SPRINT_INFO_DATAFRAME['SprintName'])
-    end_sprint = flow_form.selectbox('Choose End Sprint', Globals.SPRINT_INFO_DATAFRAME['SprintName'])
+    # Globals.SPRINT_INFO_DATAFRAME.sort_values(by=['StartDate'], ascending=False, inplace=True, ignore_index=True)
+    # start_sprint = flow_form.selectbox('Choose Start Sprint', Globals.SPRINT_INFO_DATAFRAME['SprintName'])
+    # end_sprint = flow_form.selectbox('Choose End Sprint', Globals.SPRINT_INFO_DATAFRAME['SprintName'])
+    start_date = flow_form.date_input('Calculation Start Date', value=(date.today() - timedelta(days=13)))
+    end_date = flow_form.date_input('Calculation End Date', value=date.today())
     names_field = flow_form.selectbox('Do you have item names in a column?', Globals.INPUT_CSV_DATAFRAME.columns)
     categories_field = flow_form.selectbox('Do you have categories to group results?', Globals.INPUT_CSV_DATAFRAME.columns)
     daily_wip_limit = flow_form.number_input('Daily WIP limit', min_value=1, max_value=30, value=10,
@@ -53,7 +56,7 @@ def app():
         st.write('Please make sure the Start and End Status Columns are different')
         return
 
-    calculator = FlowCalcClass(start_col, end_col, start_sprint, end_sprint, daily_wip_limit, names_field, categories_field, False, '')
+    calculator = FlowCalcClass(start_col, end_col, str(start_date), str(end_date), daily_wip_limit, names_field, categories_field, False, '')
     calculator.prep_for_metrics()
     if calculator.prep_errors_were_found():
         st.header(calculator.get_error_msgs())

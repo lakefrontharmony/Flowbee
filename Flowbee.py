@@ -16,7 +16,7 @@ show helpful charts for FLow Metrics, and calculate specific Release Metrics.
 """)
 
 app.add_app('Instructions', Instructions.app)
-app.add_app('Monte Carlo', MCSimulation.app)
+app.add_app('Monte Carlo Simulation', MCSimulation.app)
 app.add_app('Flow Metrics', FlowMetrics.app)
 app.add_app('Charts', Charts.app)
 app.add_app('Release Metrics', Releases.app)

@@ -96,11 +96,11 @@ def category_metrics_df():
 
 # This is the build of the FlowCalcClass
 @pytest.fixture()
-def input_flow_calculator(sprint_df):
+def input_flow_calculator():
 	start_col = 'InProgress'
 	end_col = 'Done'
-	start_sprint = '1.1'
-	end_sprint = '1.2'
+	start_sprint = '2022-01-03'
+	end_sprint = '2022-01-30'
 	wip_limit = 4
 	item_names = 'Name'
 	categories = 'Type'

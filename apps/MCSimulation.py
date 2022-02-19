@@ -23,11 +23,10 @@ def app():
     hist_duration = mc_form.selectbox('Choose Historical Duration for Monte Carlo', list(Globals.HIST_TIMEFRAME.keys()))
     sim_start_date = mc_form.date_input('Simulation Start Date', value=Globals.SIM_START_DATE)
     sim_end_date = mc_form.date_input('Simulation End Date', value=Globals.SIM_END_DATE)
-    items_to_complete = mc_form.number_input('How Many items to complete?', min_value=0, max_value=250, value=20,
-                                                step=1)
-    Globals.NUM_SIMULATION_ITERATIONS = mc_form.number_input('How Many iterations to run?', min_value=1000, max_value=50000,
-                                                value=10000,
-                                                step=1000)
+    items_to_complete = mc_form.number_input('How Many items to complete? (Set to 0 to use # of In-Progress for Sim)',
+                                             min_value=0, max_value=250, value=20, step=1)
+    Globals.NUM_SIMULATION_ITERATIONS = mc_form.number_input('How Many iterations to run?', min_value=1000,
+                                                             max_value=50000, value=10000, step=1000)
     submit_button = mc_form.form_submit_button(label='Run Simulation')
 
     if not submit_button:
@@ -38,11 +37,16 @@ def app():
         st.write('Please make sure the Start and End Status Columns are different')
         return
 
-    simulator = SimulationCalcClass(hist_duration, start_col, end_col, str(sim_start_date), str(sim_end_date), items_to_complete)
+    simulator = SimulationCalcClass(hist_duration, start_col, end_col, str(sim_start_date), str(sim_end_date),
+                                    items_to_complete)
     simulator.prep_for_simulation()
     if not Globals.GOOD_FOR_GO:
         return
     simulator.run_mc_simulations(Globals.NUM_SIMULATION_ITERATIONS)
+
+    if not Globals.SIMULATIONS_SUCCESSFUL:
+        st.header('Error During simulations')
+        return
 
     st.write(Globals.WORKING_PERCENTILES)
     st.header('Assumptions made during simulation')
@@ -60,10 +64,10 @@ def app():
     st.bar_chart(build_how_many_disp_df())
 
     # Display "When" data
-    st.header(f'When will we finish {items_to_complete} items?')
+    st.header(f'When will we finish {Globals.NUM_ITEMS_TO_SIMULATE} items?')
     st.write(f'This grid helps you state, '
              f'"After running {Globals.NUM_SIMULATION_ITERATIONS} simulations, '
-             f'{items_to_complete} or more items completed by yyyy-mm-dd"')
+             f'{Globals.NUM_ITEMS_TO_SIMULATE} or more items completed by yyyy-mm-dd"')
     st.write(Globals.WHEN_PERCENTILES.astype(str))
     # Results dataframe
     st.bar_chart(build_when_disp_df())

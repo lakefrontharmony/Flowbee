@@ -192,7 +192,6 @@ class SimulationCalcClass:
 		pct_list = (Globals.WORKING_PERCENTILES['Frequency'] * 100).round(2)
 		pct_list = pct_list.astype(str) + '%'
 		Globals.WORKING_PERCENTILES['Frequency'] = pct_list
-		print(Globals.WORKING_PERCENTILES)
 		self.max_entries_per_day = int(self.dist_df['Count'].max())
 		self.days_of_simulation = (self.sim_end - self.sim_start).days
 		self.days_of_simulation += 1  # include the start date (which date math was not doing)
@@ -230,6 +229,7 @@ class SimulationCalcClass:
 		when_output_array = np.zeros([0, 1])
 		prob_dist = self.dist_df['Frequency'].tolist()
 		simulation_days = int(Globals.NUM_ITEMS_TO_SIMULATE * 20)
+		# simulation_days = 5
 		for i in range(iterations):
 			# How Many
 			daily_entries_completed_list = self.generator.choice(self.max_entries_per_day+1, simulation_days, p=prob_dist)
@@ -237,7 +237,13 @@ class SimulationCalcClass:
 			how_many_output_array = np.append(how_many_output_array, int(sum(how_many_completed_list)))
 
 			# When
-			num_of_days = (np.cumsum(daily_entries_completed_list) < Globals.NUM_ITEMS_TO_SIMULATE).argmin()
+			# A bug popped up for when the number of items completed in the first day of the simulation was larger than
+			# the number to simulate, num_of_days was getting set to 0 and triggering the same condition as if the
+			# cumsum was never able to complete before hitting the end of the array. Added a default of 1 day and check
+			# to verify that the first day is smaller than the num of items to simulate before doing cumsum.
+			num_of_days = 1
+			if daily_entries_completed_list[0] < Globals.NUM_ITEMS_TO_SIMULATE:
+				num_of_days = (np.cumsum(daily_entries_completed_list) < Globals.NUM_ITEMS_TO_SIMULATE).argmin()
 			if num_of_days == 0:
 				print('reached the end of the random array before finding date of completion')
 				self.sims_going_good = False

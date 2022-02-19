@@ -5,7 +5,8 @@ import Globals
 
 
 class FlowCalcClass:
-	def __init__(self, start_col, end_col, start_sprint, end_sprint, wip_limit, item_names, categories, parent_toggle, parent_column):
+	def __init__(self, start_col, end_col, start_date, end_date,
+				 wip_limit, item_names, categories, parent_toggle, parent_column):
 		self.prep_going_good = True
 		self.calcs_going_good = True
 		self.errors = []
@@ -20,10 +21,10 @@ class FlowCalcClass:
 
 		self.start_col = start_col
 		self.end_col = end_col
-		self.start_sprint = start_sprint
-		self.end_sprint = end_sprint
-		self.start_date = None
-		self.end_date = None
+		# self.start_date = start_date
+		# self.end_date = end_date
+		self.start_date = datetime.strptime(start_date, '%Y-%m-%d')
+		self.end_date = datetime.strptime(end_date, '%Y-%m-%d')
 
 		self.clean_df = None
 		self.wip_df = None
@@ -38,8 +39,8 @@ class FlowCalcClass:
 	# EXTERNALLY CALLED FUNCTIONS
 	# =========================================
 	def prep_for_metrics(self):
-		self.start_date = self.find_matching_sprint_date(get_sprint_dataframe(), self.start_sprint, 'StartDate')
-		self.end_date = self.find_matching_sprint_date(get_sprint_dataframe(), self.end_sprint, 'EndDate')
+		# self.start_date = self.find_matching_sprint_date(get_sprint_dataframe(), self.start_date, 'StartDate')
+		# self.end_date = self.find_matching_sprint_date(get_sprint_dataframe(), self.end_date, 'EndDate')
 		if self.prep_going_good:
 			self.clean_df = self.build_clean_dataframe(get_flow_dataframe())
 		if self.prep_going_good:
