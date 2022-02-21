@@ -112,6 +112,51 @@ def dates_filtered_df():
 						columns=['Date', 'WIP', 'Throughput', 'Avg Cycle Time'])
 
 
+@pytest.fixture()
+def date_col_names():
+	return ['1_InProgress', '2_Done']
+
+
+@pytest.fixture()
+def cfd_df():
+	return pd.DataFrame([[datetime(2022, 1, 9), 2, 0],
+						 [datetime(2022, 1, 10), 2, 1],
+						 [datetime(2022, 1, 11), 2, 1],
+						 [datetime(2022, 1, 12), 2, 1],
+						 [datetime(2022, 1, 13), 2, 1],
+						 [datetime(2022, 1, 14), 2, 1],
+						 [datetime(2022, 1, 15), 2, 1],
+						 [datetime(2022, 1, 16), 2, 1],
+						 [datetime(2022, 1, 17), 2, 1],
+						 [datetime(2022, 1, 18), 2, 1],
+						 [datetime(2022, 1, 19), 2, 1],
+						 [datetime(2022, 1, 20), 2, 1],
+						 [datetime(2022, 1, 21), 2, 1],
+						 [datetime(2022, 1, 22), 2, 1],
+						 [datetime(2022, 1, 23), 2, 1],
+						 [datetime(2022, 1, 24), 2, 1],
+						 [datetime(2022, 1, 25), 2, 1],
+						 [datetime(2022, 1, 26), 2, 1],
+						 [datetime(2022, 1, 27), 2, 1],
+						 [datetime(2022, 1, 28), 2, 1],
+						 [datetime(2022, 1, 29), 2, 1],
+						 [datetime(2022, 1, 30), 2, 1],
+						 [datetime(2022, 1, 31), 2, 1],
+						 [datetime(2022, 2, 1), 2, 1],
+						 [datetime(2022, 2, 2), 2, 1],
+						 [datetime(2022, 2, 3), 2, 1]],
+						columns=['Date', '1_InProgress', '2_Done'])
+
+
+@pytest.fixture()
+def cfd_vectors_df():
+	return pd.DataFrame([['1_InProgress', datetime(2022, 1, 9), 2],
+						 ['1_InProgress', datetime(2022, 2, 3), 2],
+						 ['2_Done', datetime(2022, 1, 10), 1],
+						 ['2_Done', datetime(2022, 2, 3), 1]],
+						columns=['Status', 'Date', 'Count'])
+
+
 # This is the build of the FlowCalcClass
 @pytest.fixture()
 def input_chart_builder():
@@ -127,7 +172,8 @@ def input_chart_builder():
 ###################################
 # UNIT TESTS
 ###################################
-# TODO: Get this to run successfully
+# PREP FUNCTION TESTING
+###################################
 def test_build_clean_df(input_chart_builder, flow_input_df, chart_clean_df):
 	# setup
 	# call function
@@ -233,5 +279,65 @@ def test_build_completed_items_df(input_chart_builder, chart_clean_df, flow_comp
 	result = input_chart_builder.build_completed_df(chart_clean_df)
 	# set expectation
 	expected = flow_completed_saved_items_df
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+def test_calc_completed_stats(input_chart_builder, flow_completed_saved_items_df):
+	# setup
+	input_chart_builder.start_col = '1_InProgress'
+	input_chart_builder.end_col = '2_Done'
+	# call function
+	input_chart_builder.calc_completed_stats(flow_completed_saved_items_df)
+	# set expectation
+	expected_cycle_time_85_confidence = 180.14999999999998
+	expected_cycle_time_50_confidence = 63.0
+	expected_cycle_time_average = 95.0
+	expected_throughput_85_confidence = 1
+	expected_throughput_50_confidence = 1
+	expected_throughput_average = 0.04
+	expected_prep_going_good = True
+	# assertion
+	assert expected_cycle_time_85_confidence == input_chart_builder.cycle_time_85_confidence
+	assert expected_cycle_time_50_confidence == input_chart_builder.cycle_time_50_confidence
+	assert expected_cycle_time_average == input_chart_builder.cycle_time_average
+	assert expected_throughput_85_confidence == input_chart_builder.throughput_85_confidence
+	assert expected_throughput_50_confidence == input_chart_builder.throughput_50_confidence
+	assert expected_throughput_average == input_chart_builder.throughput_average
+	assert expected_prep_going_good == input_chart_builder.prep_going_good
+
+
+def test_prep_for_charting(input_chart_builder, flow_input_df, mocker):
+		# setup
+		test_calculator = input_chart_builder
+		mocker.patch('ChartBuilderClass.get_flow_dataframe', return_value=flow_input_df)
+		test_calculator.prep_for_charting()
+		# call function
+		result = test_calculator.prep_errors_were_found()
+		# set expectation
+		expected = False
+		# assertion
+		assert result == expected
+
+
+# PREP FUNCTION TESTING
+###################################
+def test_build_cfd_chart(input_chart_builder, dates_filtered_df, date_col_names,
+					chart_clean_filtered_to_start_date_df, cfd_df):
+	# setup
+	# call function
+	result = input_chart_builder.build_cfd_df(dates_filtered_df, date_col_names, chart_clean_filtered_to_start_date_df)
+	# set expectation
+	expected = cfd_df
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+def test_build_cfd_vectors(input_chart_builder, date_col_names, cfd_df, cfd_vectors_df):
+	# setup
+	# call function
+	result = input_chart_builder.build_cfd_vectors(date_col_names, cfd_df)
+	# set expectation
+	expected = cfd_vectors_df
 	# assertion
 	assert pd.testing.assert_frame_equal(result, expected) is None

@@ -46,15 +46,22 @@ class ChartBuilderClass:
 		if self.prep_going_good:
 			self.completed_items_df = self.build_completed_df(self.clean_df)
 		if self.prep_going_good:
-			self.calc_completed_stats()
+			self.calc_completed_stats(self.completed_items_df)
 		if self.prep_going_good:
 			Globals.GOOD_FOR_GO = True
 		else:
 			Globals.GOOD_FOR_GO = False
 
+	# This is a check for errors.
+	# Return True if errors were found, False if there were no errors
+	def prep_errors_were_found(self) -> bool:
+		if self.prep_going_good:  # pragma: no cover
+			return False  # pragma: no cover
+		return True  # pragma: no cover
+
 	def build_charts(self):
-		self.build_cfd_df()
-		self.build_cfd_vectors()
+		self.cfd_df = self.build_cfd_df(self.dates_df, self.date_col_names, self.clean_df)
+		self.cfd_vectors = self.build_cfd_vectors(self.date_col_names, self.cfd_df)
 		self.build_aging_wip_df()
 		self.build_run_df()
 		self.build_throughput_histogram_df()
@@ -214,16 +221,16 @@ class ChartBuilderClass:
 		self.prep_going_good = True
 		return completed_items_df
 
-	def calc_completed_stats(self):
-		cycle_time_col = (self.completed_items_df[self.end_col] - self.completed_items_df[self.start_col]).dt.days
+	def calc_completed_stats(self, in_completed_items_df: pd.DataFrame):
+		cycle_time_col = (in_completed_items_df[self.end_col] - in_completed_items_df[self.start_col]).dt.days
 		self.cycle_time_85_confidence = cycle_time_col.quantile(0.85)
 		self.cycle_time_50_confidence = cycle_time_col.quantile(0.50)
 		self.cycle_time_average = round(sum(cycle_time_col) / cycle_time_col.count(), 2)
 
-		throughput_count = self.completed_items_df[self.end_col].value_counts()
+		throughput_count = in_completed_items_df[self.end_col].value_counts()
 		self.throughput_85_confidence = throughput_count.quantile(0.85)
 		self.throughput_50_confidence = throughput_count.quantile(0.50)
-		num_days = (date.today() - self.completed_items_df[self.end_col].min()).days
+		num_days = (date.today() - in_completed_items_df[self.end_col].min()).days
 		self.throughput_average = round(sum(throughput_count) / num_days, 2)
 
 		self.prep_going_good = True
@@ -233,25 +240,27 @@ class ChartBuilderClass:
 	# =========================================
 	# Take the dates from the dates_df and build a new dataframe with the num of items that have entered each column
 	# for each day.
-	def build_cfd_df(self):
-		self.cfd_df = pd.DataFrame({'Date': self.dates_df['Date']})
-		self.cfd_df.set_index('Date')
-		for col_name in self.date_col_names:
-			self.cfd_df[col_name] = self.cfd_df.apply(lambda row: self.calc_completed_on_date(row, col_name), axis=1)
+	def build_cfd_df(self, in_dates_df: pd.DataFrame, in_col_names: list, in_clean_df: pd.DataFrame) -> pd.DataFrame:
+		return_cfd_df = pd.DataFrame({'Date': in_dates_df['Date']})
+		return_cfd_df.set_index('Date')
+		for col_name in in_col_names:
+			return_cfd_df[col_name] = return_cfd_df.apply(
+				lambda row: self.calc_completed_on_date(row, col_name, in_clean_df), axis=1)
 		self.charts_going_good = True
+		return return_cfd_df
 
-	def build_cfd_vectors(self):
+	def build_cfd_vectors(self, in_col_names: list, in_cfd_df: pd.DataFrame) -> pd.DataFrame:
 		vector_array = []
-		for col_name in self.date_col_names:
-			start_location = self.cfd_df.loc[self.cfd_df[col_name] > 0].idxmin()
-			start_date = self.cfd_df['Date'].loc[start_location[0]]
-			start_count = self.cfd_df[col_name].loc[start_location[0]]
-			end_date = self.cfd_df['Date'].iloc[-1]
-			end_count = self.cfd_df[col_name].iloc[-1]
+		for col_name in in_col_names:
+			start_location = in_cfd_df.loc[in_cfd_df[col_name] > 0].idxmin()
+			start_date = in_cfd_df['Date'].loc[start_location[0]]
+			start_count = in_cfd_df[col_name].loc[start_location[0]]
+			end_date = in_cfd_df['Date'].iloc[-1]
+			end_count = in_cfd_df[col_name].iloc[-1]
 			vector_array.append([col_name, start_date, start_count])
 			vector_array.append([col_name, end_date, end_count])
 
-		self.cfd_vectors = pd.DataFrame(vector_array, columns=['Status', 'Date', 'Count'])
+		return pd.DataFrame(vector_array, columns=['Status', 'Date', 'Count'])
 
 	# TODO: Can we rework this to not use 'for' loops?
 	def build_aging_wip_df(self):
@@ -318,9 +327,9 @@ class ChartBuilderClass:
 	# =========================================
 	# INTERNAL FUNCTIONS
 	# =========================================
-	def calc_completed_on_date(self, row, in_col_name):
-		found_matching_rows = self.clean_df[in_col_name] <= row['Date']
-		return len(self.clean_df[found_matching_rows].index)
+	def calc_completed_on_date(self, row, in_col_name, in_clean_df):
+		found_matching_rows = in_clean_df[in_col_name] <= row['Date'].date()
+		return len(in_clean_df[found_matching_rows].index)
 
 	def calc_in_progress_on_date(self, in_row):
 		test_date = in_row['Date']

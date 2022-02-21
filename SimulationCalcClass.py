@@ -229,7 +229,6 @@ class SimulationCalcClass:
 		when_output_array = np.zeros([0, 1])
 		prob_dist = self.dist_df['Frequency'].tolist()
 		simulation_days = int(Globals.NUM_ITEMS_TO_SIMULATE * 20)
-		# simulation_days = 5
 		for i in range(iterations):
 			# How Many
 			daily_entries_completed_list = self.generator.choice(self.max_entries_per_day+1, simulation_days, p=prob_dist)
