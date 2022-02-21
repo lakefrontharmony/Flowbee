@@ -197,8 +197,8 @@ class ChartBuilderClass:
 			cancelled_mask = (return_df['Cancelled'] != 'Yes') & (return_df['Cancelled'] != 'Cancelled')
 			return_df = return_df.loc[cancelled_mask]
 			return_df.reset_index(drop=True, inplace=True)
-		elif 'Status' in return_df:
-			cancelled_mask = (return_df['Status'] != 'Yes') & (return_df['Status'] != 'Cancelled')
+		elif 'Resolution' in return_df:
+			cancelled_mask = (return_df['Resolution'] != 'Yes') & (return_df['Resolution'] != 'Cancelled')
 			return_df = return_df.loc[cancelled_mask]
 			return_df.reset_index(drop=True, inplace=True)
 		return return_df

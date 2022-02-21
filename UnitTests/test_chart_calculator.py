@@ -375,11 +375,11 @@ def test_remove_cancelled_cancelled_rows(input_chart_builder, chart_input_df, ch
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-# Test for column name of 'Status' and values of 'Yes' in cancelled rows (column export of Jira, but with 'yes' values)
-def test_remove_status_yes_rows(input_chart_builder, chart_input_df, chart_no_cancelled_df):
+# Test for column name of 'Resolution' and values of 'Yes' in cancelled rows (column export of Jira, but with 'yes' values)
+def test_remove_resolution_yes_rows(input_chart_builder, chart_input_df, chart_no_cancelled_df):
 	# setup
-	chart_input_df.rename(columns={'Cancelled': 'Status'}, inplace=True)
-	chart_no_cancelled_df.rename(columns={'Cancelled': 'Status'}, inplace=True)
+	chart_input_df.rename(columns={'Cancelled': 'Resolution'}, inplace=True)
+	chart_no_cancelled_df.rename(columns={'Cancelled': 'Resolution'}, inplace=True)
 	# call function
 	result = input_chart_builder.remove_cancelled_rows(chart_input_df)
 	# set expectation
@@ -388,12 +388,12 @@ def test_remove_status_yes_rows(input_chart_builder, chart_input_df, chart_no_ca
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-# Test for column name of 'Status' and values of 'Cancelled' in cancelled rows (export of Jira)
-def test_remove_status_cancelled_rows(input_chart_builder, chart_input_df, chart_no_cancelled_df):
+# Test for column name of 'Resolution' and values of 'Cancelled' in cancelled rows (export of Jira)
+def test_remove_resolution_cancelled_rows(input_chart_builder, chart_input_df, chart_no_cancelled_df):
 	# setup
-	chart_input_df.rename(columns={'Cancelled': 'Status'}, inplace=True)
-	chart_no_cancelled_df.rename(columns={'Cancelled': 'Status'}, inplace=True)
-	chart_input_df.loc[chart_input_df['Status'] == 'Yes'] = 'Cancelled'
+	chart_input_df.rename(columns={'Cancelled': 'Resolution'}, inplace=True)
+	chart_no_cancelled_df.rename(columns={'Cancelled': 'Resolution'}, inplace=True)
+	chart_input_df.loc[chart_input_df['Resolution'] == 'Yes'] = 'Cancelled'
 	# call function
 	result = input_chart_builder.remove_cancelled_rows(chart_input_df)
 	# set expectation
