@@ -46,7 +46,7 @@ def app():
 	# Build Chart Data
 	# =========================================
 	chart_builder = ChartBuilderClass(start_col, end_col, name_col, use_start_date, str(chart_start_date),
-									  daily_wip_limit)
+									  date.today(), daily_wip_limit)
 	chart_builder.prep_for_charting()
 	if not Globals.GOOD_FOR_GO:
 		st.subheader('Errors were found when preparing to Chart data:')
@@ -136,12 +136,12 @@ def display_example_csv_dataframe():
 			 '(no other columns between date columns).')
 	st.write('You can also add additional columns for grouping or naming')
 	st.write('Cancelled items should be denoted with either a "Cancelled" column, or a "Status" column which has'
-			 '"Yes" or "Cancelled" for the applicable rows.')
-	example_df = pd.DataFrame([['Name of item', 'In Progress Date (YYYY-MM-DD)', 'Done Date (YYYY-MM-DD)',
-								'Yes or Blank', 'Category Name'],
-							   ['Improve Sales', '2021-12-15', '2022-01-15', '', 'Strategic'],
-							   ['Decrease Call Return Time', '2021-06-20', '2021-07-15', 'Yes', 'Maintenance']],
-							  columns=['Name', 'In Progress', 'Done', 'Cancelled', 'Grouping'])
+			 ' "Yes" or "Cancelled" for the applicable rows.')
+	example_df = pd.DataFrame([['Name of item', 'Ready Date (YYYY-MM-DD)', 'In Progress Date (YYYY-MM-DD)',
+								'Done Date (YYYY-MM-DD)', '"Yes" or "Cancelled" to exclude', 'Category Name'],
+							   ['Improve Sales','2021-11-15', '2021-12-15', '2022-01-15', '', 'Strategic'],
+							   ['Decrease Call Return Time', '2021-05-27', '2021-06-20', '2021-07-15', 'Yes', 'Maintenance']],
+							  columns=['Name','Ready', 'In Progress', 'Done', 'Cancelled', 'Grouping'])
 	st.write(example_df)
 
 
@@ -485,4 +485,4 @@ def build_cycle_time_scatterplot(chart_builder: ChartBuilderClass):
 					use_container_width=True)
 
 	# TODO: Enhance Cycle Time Stats
-	st.write(chart_builder.get_cycle_time_scatter_df())
+	st.write(scatter_df)

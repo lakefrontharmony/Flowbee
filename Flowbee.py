@@ -12,7 +12,7 @@ Globals.INPUT_CSV_DATAFRAME = None
 st.markdown("""
 # Flowbee Calculator
 This is a calculator for agile metrics. It can run a Monte Carlo Simulation, calculate standard Flow Metrics, 
-show helpful charts for FLow Metrics, and calculate specific Release Metrics.
+show helpful charts for Flow Metrics, and calculate specific Release Metrics.
 """)
 
 app.add_app('Instructions', Instructions.app)

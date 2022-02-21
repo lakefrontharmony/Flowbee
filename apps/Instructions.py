@@ -4,11 +4,9 @@ from PIL import Image
 
 def app():
 	st.sidebar.header('Select an option from the Navigation dropdown to get started')
-	st.sidebar.subheader('Templates for Download:')
+	st.sidebar.subheader('Template for Download:')
 	with open('Files/Flow_template.csv') as file:
 		st.sidebar.download_button('Download Flow CSV', file, file_name='Flow.csv', mime='text/csv')
-	with open('Files/SprintData_template.csv') as file:
-		st.sidebar.download_button('Download Sprint Data CSV', file, file_name='SprintData.csv', mime='text/csv')
 
 	flowbee_pic = Image.open('Files/Flowbee-box.jpeg')
 	st.image(flowbee_pic, caption='The original Flowbee')

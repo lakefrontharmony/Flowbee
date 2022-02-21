@@ -4,12 +4,13 @@ from datetime import datetime, date
 
 
 class ChartBuilderClass:
-	def __init__(self, st_col, end_col, name_col, use_start_date, chart_st, wip_limit):
+	def __init__(self, st_col, end_col, name_col, use_start_date, chart_st, end_date, wip_limit):
 		self.start_date = datetime.strptime(chart_st, '%Y-%m-%d').date()
 		self.start_col = st_col
 		self.end_col = end_col
 		self.name_col = str(name_col).replace(' ', '')
 		self.use_start_date = use_start_date
+		self.end_date = end_date
 		self.wip_limit = wip_limit
 
 		self.prep_going_good = True
@@ -42,11 +43,11 @@ class ChartBuilderClass:
 		if self.prep_going_good & self.use_start_date:
 			self.clean_df = self.filter_clean_df_to_start_date(self.clean_df)
 		if self.prep_going_good:
-			self.dates_df = self.build_dates_df(self.clean_df, date.today())
+			self.dates_df = self.build_dates_df(self.clean_df, self.end_date)
 		if self.prep_going_good:
 			self.completed_items_df = self.build_completed_df(self.clean_df)
 		if self.prep_going_good:
-			self.calc_completed_stats(self.completed_items_df)
+			self.calc_completed_stats(self.completed_items_df, self.end_date)
 		if self.prep_going_good:
 			Globals.GOOD_FOR_GO = True
 		else:
@@ -62,15 +63,20 @@ class ChartBuilderClass:
 	def build_charts(self):
 		self.cfd_df = self.build_cfd_df(self.dates_df, self.date_col_names, self.clean_df)
 		self.cfd_vectors = self.build_cfd_vectors(self.date_col_names, self.cfd_df)
-		self.build_aging_wip_df()
-		self.build_run_df()
-		self.build_throughput_histogram_df()
-		self.build_cycle_time_histogram_df()
-		self.build_cycle_time_scatter_df()
+		self.aging_wip_df = self.build_aging_wip_df(self.clean_df, self.date_col_names, self.end_date)
+		self.run_df = self.build_run_df(self.dates_df, self.clean_df)
+		self.throughput_hist_df = self.build_throughput_histogram_df(self.run_df)
+		self.cycle_time_hist_df = self.build_cycle_time_histogram_df(self.aging_wip_df)
+		self.cycle_time_scatter_df = self.build_cycle_time_scatter_df(self.aging_wip_df)
 		if self.charts_going_good:
 			Globals.CHARTS_BUILT_SUCCESSFULLY = True
 		else:
 			Globals.CHARTS_BUILT_SUCCESSFULLY = False
+
+	def build_errors_were_found(self) -> bool:
+		if self.charts_going_good:
+			return False
+		return True
 
 	def get_clean_df(self):  # pragma: no cover
 		return self.clean_df  # pragma: no cover
@@ -221,7 +227,7 @@ class ChartBuilderClass:
 		self.prep_going_good = True
 		return completed_items_df
 
-	def calc_completed_stats(self, in_completed_items_df: pd.DataFrame):
+	def calc_completed_stats(self, in_completed_items_df: pd.DataFrame, end_date: date):
 		cycle_time_col = (in_completed_items_df[self.end_col] - in_completed_items_df[self.start_col]).dt.days
 		self.cycle_time_85_confidence = cycle_time_col.quantile(0.85)
 		self.cycle_time_50_confidence = cycle_time_col.quantile(0.50)
@@ -230,7 +236,7 @@ class ChartBuilderClass:
 		throughput_count = in_completed_items_df[self.end_col].value_counts()
 		self.throughput_85_confidence = throughput_count.quantile(0.85)
 		self.throughput_50_confidence = throughput_count.quantile(0.50)
-		num_days = (date.today() - in_completed_items_df[self.end_col].min()).days
+		num_days = (end_date - in_completed_items_df[self.end_col].min()).days
 		self.throughput_average = round(sum(throughput_count) / num_days, 2)
 
 		self.prep_going_good = True
@@ -262,67 +268,74 @@ class ChartBuilderClass:
 
 		return pd.DataFrame(vector_array, columns=['Status', 'Date', 'Count'])
 
-	# TODO: Can we rework this to not use 'for' loops?
-	def build_aging_wip_df(self):
+	def build_aging_wip_df(self, in_clean_df: pd.DataFrame, in_date_col_names: list, end_date: date) -> pd.DataFrame:
 		# Create a copy of clean_df and set all of the NaT dates to today's date
 		# (this makes the date math work in the reverse cycle through the date_col_names list)
-		temp_clean_df = self.clean_df.copy()
-		temp_clean_df.fillna(date.today(), inplace=True)
-		self.aging_wip_df = pd.DataFrame({'Name': self.clean_df[self.name_col], 'Age': 0, 'Status': '',
-										  'Start Date': self.clean_df[self.start_col], 'Done_Date': pd.NaT})
+		temp_clean_df = in_clean_df.copy()
+		temp_clean_df.fillna(end_date, inplace=True)
+		return_aging_wip_df = pd.DataFrame({'Name': in_clean_df[self.name_col], 'Age': 0, 'Status': '',
+										  'Start_Date': in_clean_df[self.start_col], 'Done_Date': pd.NaT})
 
-		for col_name in self.date_col_names:
-			self.aging_wip_df[col_name] = 0
-			status_mask = pd.notnull(self.clean_df[col_name])
-			self.aging_wip_df['Status'].loc[status_mask] = col_name
+		return_aging_wip_df['Start_Date'] = return_aging_wip_df['Start_Date'].apply(pd.to_datetime, errors='coerce')
+		return_aging_wip_df['Done_Date'] = return_aging_wip_df['Done_Date'].apply(pd.to_datetime, errors='coerce')
+
+		# set duration of each column to 0 and set the status of each item to the last status which is not null
+		for col_name in in_date_col_names:
+			return_aging_wip_df[col_name] = 0
+			status_mask = pd.notnull(in_clean_df[col_name])
+			return_aging_wip_df.loc[status_mask, 'Status'] = col_name
+
+		# walk the date_col_name list backwards to do math of how long the item spent in each status.
 		prev_column = self.end_col
-
-		for col_name in reversed(self.date_col_names):
-			self.aging_wip_df[col_name] = (temp_clean_df[prev_column] - temp_clean_df[col_name]).dt.days
-			self.aging_wip_df['Age'] += self.aging_wip_df[col_name]
+		for col_name in reversed(in_date_col_names):
+			return_aging_wip_df.loc[:, col_name] = (temp_clean_df[prev_column] - temp_clean_df[col_name]).dt.days
+			return_aging_wip_df.loc[:, 'Age'] += return_aging_wip_df[col_name]
 			prev_column = col_name
 
-		done_mask = pd.notnull(self.clean_df[self.end_col])
-		self.aging_wip_df['Done_Date'].loc[done_mask] = self.clean_df[self.end_col].loc[done_mask]
-		self.aging_wip_df['CycleTime85'] = self.cycle_time_85_confidence
-		self.aging_wip_df['CycleTime50'] = self.cycle_time_50_confidence
-		self.aging_wip_df['CycleTimeAvg'] = self.cycle_time_average
+		done_mask = pd.notnull(in_clean_df[self.end_col])
+		return_aging_wip_df.loc[done_mask, 'Done_Date'] = in_clean_df[self.end_col].loc[done_mask]
+		return_aging_wip_df.loc[:, 'CycleTime85'] = self.cycle_time_85_confidence
+		return_aging_wip_df.loc[:, 'CycleTime50'] = self.cycle_time_50_confidence
+		return_aging_wip_df.loc[:, 'CycleTimeAvg'] = self.cycle_time_average
 		self.charts_going_good = True
+		return return_aging_wip_df
 
-	def build_run_df(self):
-		self.run_df = pd.DataFrame({'Date': self.dates_df['Date']})
-		self.run_df['WIP'] = self.run_df.apply(lambda row: self.calc_in_progress_on_date(row), axis=1)
+	def build_run_df(self, in_dates_df: pd.DataFrame, in_clean_df: pd.DataFrame) -> pd.DataFrame:
+		return_run_df = pd.DataFrame({'Date': in_dates_df['Date']})
+		return_run_df['WIP'] = return_run_df.apply(lambda row: self.calc_in_progress_on_date(row, in_clean_df), axis=1)
 		# TODO: Review the SimulationCalcClass to see how I did this without cycling through each row before.
-		self.run_df['Throughput'] = self.run_df.apply(lambda row: self.calc_throughput_on_date(row), axis=1)
-		self.run_df['WIPLimit'] = self.wip_limit
+		return_run_df['Throughput'] = return_run_df.apply(lambda row: self.calc_throughput_on_date(row, in_clean_df), axis=1)
+		return_run_df['WIPLimit'] = self.wip_limit
 		self.charts_going_good = True
+		return return_run_df
 
-	def build_throughput_histogram_df(self):
-		value_counts = self.run_df['Throughput'].value_counts()
-		self.throughput_hist_df = pd.DataFrame(value_counts)
-		self.throughput_hist_df.reset_index(inplace=True)
-		self.throughput_hist_df.rename(columns={'Throughput': 'Count', 'index': 'Throughput'}, inplace=True)
-		self.throughput_hist_df['Throughput85'] = self.throughput_85_confidence
-		self.throughput_hist_df['Throughput50'] = self.throughput_50_confidence
-		self.throughput_hist_df['ThroughputAvg'] = self.throughput_average
+	def build_throughput_histogram_df(self, in_run_df: pd.DataFrame) -> pd.DataFrame:
+		value_counts = in_run_df['Throughput'].value_counts()
+		return_throughput_hist_df = pd.DataFrame(value_counts)
+		return_throughput_hist_df.reset_index(inplace=True)
+		return_throughput_hist_df.rename(columns={'Throughput': 'Count', 'index': 'Throughput'}, inplace=True)
+		return_throughput_hist_df['Throughput85'] = self.throughput_85_confidence
+		return_throughput_hist_df['Throughput50'] = self.throughput_50_confidence
+		return_throughput_hist_df['ThroughputAvg'] = self.throughput_average
+		return return_throughput_hist_df
 
-	def build_cycle_time_histogram_df(self):
-		completed_mask = self.aging_wip_df['Status'] == self.end_col
-		completed_items = self.aging_wip_df.loc[completed_mask].copy()
+	def build_cycle_time_histogram_df(self, in_aging_wip_df: pd.DataFrame) -> pd.DataFrame:
+		completed_mask = in_aging_wip_df['Status'] == self.end_col
+		completed_items = in_aging_wip_df.loc[completed_mask].copy()
 		age_counts = completed_items['Age'].value_counts()
-		self.cycle_time_hist_df = pd.DataFrame(age_counts)
-		self.cycle_time_hist_df.reset_index(inplace=True)
-		self.cycle_time_hist_df.rename(columns={'Age': 'Count', 'index': 'Age'}, inplace=True)
-		self.cycle_time_hist_df['CycleTime85'] = self.cycle_time_85_confidence
-		self.cycle_time_hist_df['CycleTime50'] = self.cycle_time_50_confidence
-		self.cycle_time_hist_df['CycleTimeAvg'] = self.cycle_time_average
+		return_cycle_time_hist_df = pd.DataFrame(age_counts)
+		return_cycle_time_hist_df.reset_index(inplace=True)
+		return_cycle_time_hist_df.rename(columns={'Age': 'Count', 'index': 'Age'}, inplace=True)
+		return_cycle_time_hist_df['CycleTime85'] = self.cycle_time_85_confidence
+		return_cycle_time_hist_df['CycleTime50'] = self.cycle_time_50_confidence
+		return_cycle_time_hist_df['CycleTimeAvg'] = self.cycle_time_average
+		return return_cycle_time_hist_df
 
-	def build_cycle_time_scatter_df(self):
-		completed_mask = self.aging_wip_df['Status'] == self.end_col
-		self.cycle_time_scatter_df = self.aging_wip_df.loc[completed_mask].copy()
-		self.cycle_time_scatter_df['CycleTime85'] = self.cycle_time_85_confidence
-		self.cycle_time_scatter_df['CycleTime50'] = self.cycle_time_50_confidence
-		self.cycle_time_scatter_df['CycleTimeAvg'] = self.cycle_time_average
+	# This is aging wip, but only on completed items
+	def build_cycle_time_scatter_df(self, in_aging_wip_df: pd.DataFrame) -> pd.DataFrame:
+		completed_mask = in_aging_wip_df['Status'] == self.end_col
+		return_cycle_time_scatter_df = in_aging_wip_df.loc[completed_mask].copy()
+		return return_cycle_time_scatter_df
 
 	# =========================================
 	# INTERNAL FUNCTIONS
@@ -331,16 +344,16 @@ class ChartBuilderClass:
 		found_matching_rows = in_clean_df[in_col_name] <= row['Date'].date()
 		return len(in_clean_df[found_matching_rows].index)
 
-	def calc_in_progress_on_date(self, in_row):
-		test_date = in_row['Date']
-		date_mask = (self.clean_df[self.start_col] <= test_date) & (self.clean_df[self.end_col].isnull()) | \
-					((self.clean_df[self.start_col] <= test_date) & (self.clean_df[self.end_col] > test_date))
-		return len(self.clean_df.loc[date_mask].index)
+	def calc_in_progress_on_date(self, row: pd.Series, in_clean_df: pd.DataFrame):
+		test_date = row['Date'].date()
+		date_mask = (in_clean_df[self.start_col] <= test_date) & (in_clean_df[self.end_col].isnull()) | \
+					((in_clean_df[self.start_col] <= test_date) & (in_clean_df[self.end_col] > test_date))
+		return len(in_clean_df.loc[date_mask].index)
 
-	def calc_throughput_on_date(self, in_row):
-		test_date = in_row['Date']
-		date_mask = (self.clean_df[self.end_col] == test_date)
-		return len(self.clean_df.loc[date_mask].index)
+	def calc_throughput_on_date(self, row, in_clean_df: pd.DataFrame):
+		test_date = row['Date'].date()
+		date_mask = (in_clean_df[self.end_col] == test_date)
+		return len(in_clean_df.loc[date_mask].index)
 
 	def fillna_dates(self, in_df: pd.DataFrame) -> pd.DataFrame:
 		temp_df = in_df.fillna(axis=1, method='bfill')
