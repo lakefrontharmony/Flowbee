@@ -28,6 +28,10 @@ def simulator_input_df():
 						 ['D3', 'TestD4', 'Parent4', '2022-01-20', '2022-01-21', '2022-02-01', '', 'Strategic'],
 						 ['D4', 'TestD4', 'Parent4', '2022-02-01', '2022-02-03', '2022-02-05', '', 'Strategic'],
 						 ['D5', 'TestD5', 'Parent4', '2022-02-01', '2022-02-02', '2022-03-01', '', 'Strategic'],
+						 ['D6', 'TestD6', 'Parent4', '2022-01-02', '2022-01-02', '2022-01-20', '', 'Strategic'],
+						 ['D7', 'TestD7', 'Parent4', '2022-01-01', '2022-01-02', '2022-01-20', '', 'Strategic'],
+						 ['Z3', 'TestZ3', 'Parent9', '2021-11-02', '2021-12-02', '2022-02-10', '', 'Maintenance'],
+						 ['Z4', 'TestZ4', 'Parent9', '2021-11-02', '2021-12-02', '2022-02-10', '', 'Maintenance'],
 						 ['Z5', 'TestZ5', 'Parent9', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler'],
 						 ['Z6', 'TestZ6', 'Parent9', '2021-11-02', '2021-12-02', '2022-02-10', '', 'Maintenance'],
 						 ['Z7', 'TestZ7', 'Parent9', '2022-01-01', '2022-01-03', '', '', 'Strategic']],
@@ -46,18 +50,38 @@ def simulator_prepped_df():
 						 ['D3', 'TestD4', 'Parent4', '2022-01-20', datetime(2022, 1, 21), datetime(2022, 2, 1), '', 'Strategic'],
 						 ['D4', 'TestD4', 'Parent4', '2022-02-01', datetime(2022, 2, 3), datetime(2022, 2, 5), '', 'Strategic'],
 						 ['D5', 'TestD5', 'Parent4', '2022-02-01', datetime(2022, 2, 2), datetime(2022, 3, 1), '', 'Strategic'],
+						 ['D6', 'TestD6', 'Parent4', '2022-01-02', datetime(2022, 1, 2), datetime(2022, 1, 20), '', 'Strategic'],
+						 ['D7', 'TestD7', 'Parent4', '2022-01-01', datetime(2022, 1, 2), datetime(2022, 1, 20), '', 'Strategic'],
+						 ['Z3', 'TestZ3', 'Parent9', '2021-11-02', datetime(2021, 12, 2), datetime(2022, 2, 10), '', 'Maintenance'],
+						 ['Z4', 'TestZ4', 'Parent9', '2021-11-02', datetime(2021, 12, 2), datetime(2022, 2, 10), '', 'Maintenance'],
 						 ['Z5', 'TestZ5', 'Parent9', '2021-08-08', datetime(2021, 10, 6), datetime(2022, 1, 10), '', 'Enabler'],
 						 ['Z6', 'TestZ6', 'Parent9', '2021-11-02', datetime(2021, 12, 2), datetime(2022, 2, 10), '', 'Maintenance']],
 						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
 
 
-# This is the dataframe after build_clean_dataframe
+# This is the dataframe after build_clean_dataframe using 01/16/2022 - 2/15/2022 date range (exludes 03/01/2022 item)
 @pytest.fixture()
-def simulator_clean_df():
+def simulator_clean_df_excluding_future_date_test():
 	return pd.DataFrame([[datetime(2021, 11, 16), datetime(2022, 1, 20)],
 						 [datetime(2022, 1, 1), datetime(2022, 1, 20)],
 						 [datetime(2022, 1, 21), datetime(2022, 2, 1)],
 						 [datetime(2022, 2, 3), datetime(2022, 2, 5)],
+						 [datetime(2022, 1, 2), datetime(2022, 1, 20)],
+						 [datetime(2022, 1, 2), datetime(2022, 1, 20)],
+						 [datetime(2021, 12, 2), datetime(2022, 2, 10)],
+						 [datetime(2021, 12, 2), datetime(2022, 2, 10)],
+						 [datetime(2021, 12, 2), datetime(2022, 2, 10)]],
+						 columns=['InProgress', 'Done'])
+
+
+# This is the dataframe after build_clean_dataframe (2022-01-30 - 2022-3-1 date range)
+@pytest.fixture()
+def simulator_clean_df():
+	return pd.DataFrame([[datetime(2022, 1, 21), datetime(2022, 2, 1)],
+						 [datetime(2022, 2, 3), datetime(2022, 2, 5)],
+						 [datetime(2022, 2, 2), datetime(2022, 3, 1)],
+						 [datetime(2021, 12, 2), datetime(2022, 2, 10)],
+						 [datetime(2021, 12, 2), datetime(2022, 2, 10)],
 						 [datetime(2021, 12, 2), datetime(2022, 2, 10)]],
 						 columns=['InProgress', 'Done'])
 
@@ -65,21 +89,7 @@ def simulator_clean_df():
 # This is the dataframe after build_dates_dataframe using "last month" option (30 days) (using end date of 2/15/2022)
 @pytest.fixture()
 def dates_df_one_month():
-	return pd.DataFrame([[datetime(2022, 1, 16), 0],
-						 [datetime(2022, 1, 17), 0],
-						 [datetime(2022, 1, 18), 0],
-						 [datetime(2022, 1, 19), 0],
-						 [datetime(2022, 1, 20), 0],
-						 [datetime(2022, 1, 21), 0],
-						 [datetime(2022, 1, 22), 0],
-						 [datetime(2022, 1, 23), 0],
-						 [datetime(2022, 1, 24), 0],
-						 [datetime(2022, 1, 25), 0],
-						 [datetime(2022, 1, 26), 0],
-						 [datetime(2022, 1, 27), 0],
-						 [datetime(2022, 1, 28), 0],
-						 [datetime(2022, 1, 29), 0],
-						 [datetime(2022, 1, 30), 0],
+	return pd.DataFrame([[datetime(2022, 1, 30), 0],
 						 [datetime(2022, 1, 31), 0],
 						 [datetime(2022, 2, 1), 0],
 						 [datetime(2022, 2, 2), 0],
@@ -95,7 +105,21 @@ def dates_df_one_month():
 						 [datetime(2022, 2, 12), 0],
 						 [datetime(2022, 2, 13), 0],
 						 [datetime(2022, 2, 14), 0],
-						 [datetime(2022, 2, 15), 0]],
+						 [datetime(2022, 2, 15), 0],
+						 [datetime(2022, 2, 16), 0],
+						 [datetime(2022, 2, 17), 0],
+						 [datetime(2022, 2, 18), 0],
+						 [datetime(2022, 2, 19), 0],
+						 [datetime(2022, 2, 20), 0],
+						 [datetime(2022, 2, 21), 0],
+						 [datetime(2022, 2, 22), 0],
+						 [datetime(2022, 2, 23), 0],
+						 [datetime(2022, 2, 24), 0],
+						 [datetime(2022, 2, 25), 0],
+						 [datetime(2022, 2, 26), 0],
+						 [datetime(2022, 2, 27), 0],
+						 [datetime(2022, 2, 28), 0],
+						 [datetime(2022, 3, 1), 0]],
 						 columns=['Date', 'Frequency'])
 
 
@@ -104,14 +128,36 @@ def dates_df_one_month():
 def dist_df_one_month():
 	return pd.DataFrame([[0.0, 0.8709677419354839],
 						 [1.0, 0.0967741935483871],
-						 [2.0, 0.03225806451612903]],
+						 [2.0, 0],
+						 [3.0, 0.03225806451612903]],
 						 columns=['Count', 'Frequency'])
+
+
+# This is the dataframe after build_display_percentiles_df using "last month" option (30 days) (using end date of 2/15/2022)
+@pytest.fixture()
+def display_dist_df_one_month():
+	return pd.DataFrame([[0.0, '87.1%'],
+						 [1.0, '9.68%'],
+						 [2.0, '0.0%'],
+						 [3.0, '3.23%']],
+						 columns=['Count', 'Frequency'])
+
+
+# This is the dataframe after final_field_preparation using "last month" option (30 days) (using end date of 2/15/2022)
+@pytest.fixture()
+def simulation_stats_one_month():
+	return pd.DataFrame([['Historical Date Range', '2022-01-30 - 2022-03-01'],
+						 ['Simulation Date Range', '2022-01-19 - 2022-04-12'],
+						 ['Number of Days For "How Many" Sim', '84'],
+						 ['Number of Items For "When" Sim', '20'],
+						 ['Max Throughput Per Day:', '3']],
+						 columns=['Category', 'Value'])
 
 
 # This is the build of the SimulationCalcClass
 @pytest.fixture()
 def input_simulator_builder():
-	duration = 'Last Month'
+	duration = 'Last Month In File'
 	start_col = 'InProgress'
 	end_col = 'Done'
 	sim_start = '2022-01-19'
@@ -244,7 +290,7 @@ def test_determine_hist_date_range_for_ytd(input_simulator_builder, simulator_pr
 # Establish start and end dates of historical range
 def test_determine_hist_date_for_12_months(input_simulator_builder, simulator_prepped_df):
 	# setup
-	input_simulator_builder.duration = 'Last 12 Months'
+	input_simulator_builder.duration = 'Last 12 Months In File'
 	# call function
 	input_simulator_builder.determine_hist_date_range(simulator_prepped_df)
 	result_start_date = input_simulator_builder.start_date
@@ -301,14 +347,15 @@ def test_determine_hist_date_error(input_simulator_builder, simulator_prepped_df
 
 
 # Removed cancelled rows and those with null values in start/end columns
-def test_building_clean_dataframe(input_simulator_builder, simulator_prepped_df, simulator_clean_df):
+def test_building_clean_dataframe(input_simulator_builder, simulator_prepped_df,
+								  simulator_clean_df_excluding_future_date_test):
 	# setup
 	# set these values since we are not running through other prep functions
 	input_simulator_builder.start_date = datetime(2022, 1, 16)
 	# call function
 	result = input_simulator_builder.build_clean_dataframe(simulator_prepped_df)
 	# set expectation
-	expected = simulator_clean_df
+	expected = simulator_clean_df_excluding_future_date_test
 	# assertion
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
@@ -317,8 +364,8 @@ def test_building_clean_dataframe(input_simulator_builder, simulator_prepped_df,
 def test_building_dates_df_for_30_days(input_simulator_builder, dates_df_one_month):
 	# setup
 	# set these values since we are not running through other prep functions
-	input_simulator_builder.start_date = datetime(2022, 1, 16)
-	input_simulator_builder.end_date = datetime(2022, 2, 15)
+	input_simulator_builder.start_date = datetime(2022, 1, 30)
+	input_simulator_builder.end_date = datetime(2022, 3, 1)
 	# call function
 	result = input_simulator_builder.build_dates_dataframe()
 	# set expectation
@@ -331,8 +378,8 @@ def test_building_dates_df_for_30_days(input_simulator_builder, dates_df_one_mon
 def test_building_dist_df(input_simulator_builder, simulator_clean_df, dates_df_one_month, dist_df_one_month):
 	# setup
 	# set these values since we are not running through other prep functions
-	input_simulator_builder.start_date = datetime(2022, 1, 16)
-	input_simulator_builder.end_date = datetime(2022, 2, 15)
+	input_simulator_builder.start_date = datetime(2022, 1, 30)
+	input_simulator_builder.end_date = datetime(2022, 3, 1)
 	# call function
 	result = input_simulator_builder.build_dist_dataframe(simulator_clean_df, dates_df_one_month)
 	# set expectation
@@ -341,13 +388,31 @@ def test_building_dist_df(input_simulator_builder, simulator_clean_df, dates_df_
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-# test building final fields for calculations
-def test_final_field_preparation(input_simulator_builder, simulator_clean_df, dates_df_one_month, dist_df_one_month):
+def test_build_display_percentiles_df(input_simulator_builder, dist_df_one_month, display_dist_df_one_month):
 	# setup
+	# set these values since we are not running through other prep functions
+	input_simulator_builder.start_date = datetime(2022, 1, 16)
 	# call function
+	result = input_simulator_builder.build_display_percentiles_df(dist_df_one_month)
 	# set expectation
+	expected = display_dist_df_one_month
 	# assertion
-	pass
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+# test building final fields for calculations
+def test_final_field_preparation(input_simulator_builder, dist_df_one_month, simulator_clean_df, simulation_stats_one_month):
+	# setup
+	# set these values since we are not running through other prep functions
+	input_simulator_builder.start_date = datetime(2022, 1, 30)
+	input_simulator_builder.end_date = datetime(2022, 3, 1)
+	# call function
+	input_simulator_builder.final_field_preparation(dist_df_one_month, simulator_clean_df)
+	result = input_simulator_builder.get_simulation_stats()
+	# set expectation
+	expected = simulation_stats_one_month
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
 # Build distribution dataframe based on last 30 days option
@@ -363,3 +428,64 @@ def test_calculate_current_wip_entries(input_simulator_builder, simulator_input_
 	expected = 2
 	# assertion
 	assert result == expected
+
+
+# Full test of prep_for_simulations
+def test_prep_for_simulations(input_simulator_builder, simulator_input_df, simulator_clean_df, dates_df_one_month,
+							  dist_df_one_month, display_dist_df_one_month, simulation_stats_one_month, mocker):
+	# setup
+	mocker.patch('SimulationCalcClass.get_input_dataframe', return_value=simulator_input_df)
+
+	# call function
+	input_simulator_builder.prep_for_simulation()
+	result_clean_df = input_simulator_builder.clean_df
+	result_start_date = input_simulator_builder.start_date
+	result_end_date = input_simulator_builder.end_date
+	result_dates_df = input_simulator_builder.dates_df
+	result_dist_df = input_simulator_builder.dist_df
+	result_display_dist_df = input_simulator_builder.display_dist_df
+	result_simulation_stats = input_simulator_builder.simulation_stats
+
+	# set expectation
+	expected_clean_df = simulator_clean_df
+	expected_start_date = datetime(2022, 1, 30)
+	expected_end_date = datetime(2022, 3, 1)
+	expected_dates_df = dates_df_one_month
+	expected_dist_df = dist_df_one_month
+	expected_display_dist_df = display_dist_df_one_month
+	expected_simulation_stats = simulation_stats_one_month
+
+	# assertion
+	assert pd.testing.assert_frame_equal(result_clean_df, expected_clean_df) is None
+	assert result_start_date == expected_start_date
+	assert result_end_date == expected_end_date
+	assert pd.testing.assert_frame_equal(result_dates_df, expected_dates_df) is None
+	assert pd.testing.assert_frame_equal(result_dist_df, expected_dist_df) is None
+	assert pd.testing.assert_frame_equal(result_display_dist_df, expected_display_dist_df) is None
+	assert pd.testing.assert_frame_equal(result_simulation_stats, expected_simulation_stats) is None
+
+
+# Full test of prep_for_simulations
+def test_prep_with_current_wip(input_simulator_builder_use_current_wip, simulator_input_df, mocker):
+	# setup
+	mocker.patch('SimulationCalcClass.get_input_dataframe', return_value=simulator_input_df)
+
+	# call function
+	input_simulator_builder_use_current_wip.prep_for_simulation()
+	result_num_items_to_simulate = input_simulator_builder_use_current_wip.num_items_to_simulate
+
+	# set expectation
+	expected_num_items_to_simulate = 2
+
+	# assertion
+	assert result_num_items_to_simulate == expected_num_items_to_simulate
+
+
+"""
+# Keeping this just so I remember how to snag from capsys if I need to see a print output
+def test_capsys_output(capsys):
+	print('testing an output')
+	captured = capsys.readouterr()
+	assert captured.out == 'testing an output'
+	asser captured.err == ''
+"""

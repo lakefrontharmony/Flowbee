@@ -20,6 +20,8 @@ class SimulationCalcClass:
 		self.clean_df = None
 		self.dates_df = None
 		self.dist_df = None
+		self.display_dist_df = None
+		self.simulation_stats = None
 		self.max_entries_per_day = 0
 		self.days_of_simulation = 0
 		self.prep_going_good = True
@@ -43,9 +45,7 @@ class SimulationCalcClass:
 		if self.prep_going_good:
 			self.dist_df = self.build_dist_dataframe(self.clean_df, self.dates_df)
 		if self.prep_going_good:
-			self.final_field_preparation()
-		if self.prep_going_good:
-			Globals.GOOD_FOR_GO = True
+			self.final_field_preparation(self.dist_df, self.clean_df)
 
 	# TODO: Build in Error Handling through simulations
 	def run_mc_simulations(self, iterations):
@@ -57,14 +57,34 @@ class SimulationCalcClass:
 			self.build_when_percentile_dataframe()
 		if self.sims_going_good:
 			self.log_run_stats()
-		if self.sims_going_good:
-			Globals.SIMULATIONS_SUCCESSFUL = True
 
-	def get_error_msgs(self) -> list:
+	def prep_errors_were_found(self) -> bool:
+		if self.prep_going_good:
+			return False
+		else:
+			return True
+
+	def calc_errors_were_found(self) -> bool:
+		if self.sims_going_good:
+			return False
+		else:
+			return True
+
+	def get_error_msgs(self) -> list:  # pragma: no cover
 		return self.errors  # pragma: no cover
 
-	def get_num_items_to_simulate(self) -> int:
-		return self.num_items_to_simulate
+	def get_num_items_to_simulate(self) -> int:  # pragma: no cover
+		return self.num_items_to_simulate  # pragma: no cover
+
+	def get_display_dist_df(self) -> pd.DataFrame:  # pragma: no cover
+		return self.display_dist_df  # pragma: no cover
+
+	def get_simulation_stats(self) -> pd.DataFrame:  # pragma: no cover
+		return self.simulation_stats  # pragma: no cover
+
+	def get_simulation_start_date(self) -> datetime:
+		return self.sim_start
+
 	# =========================================
 	# ASSUMPTIONS
 	# =========================================
@@ -103,11 +123,18 @@ class SimulationCalcClass:
 		start_bool_series = return_df[self.start_col].ne('')
 		return_df = return_df.loc[start_bool_series]
 
+		if return_df is None:
+			self.prep_going_good = False
+			self.errors.append('No entries after removing cancelled and not-started entries')
+			# return an empty dataframe
+			return pd.DataFrame()
+
 		# convert date columns to datetime elements.
 		return_df.loc[:, self.start_col] = pd.to_datetime(return_df[self.start_col])
 		return_df.loc[:, self.end_col] = pd.to_datetime(return_df[self.end_col])
 
 		return_df.reset_index(drop=True, inplace=True)
+		self.prep_going_good = True
 		return return_df
 
 	def remove_cancelled_rows(self, in_df: pd.DataFrame) -> pd.DataFrame:
@@ -158,25 +185,32 @@ class SimulationCalcClass:
 		self.report_error('Unexpected duration of simulation received')
 
 	# Build a clean dataframe with only appropriate entries for calculations
-	# TODO: Error Handling
 	def build_clean_dataframe(self, in_clean_df: pd.DataFrame) -> pd.DataFrame:
 		# return entries within the appropriate date range
 		return_df = in_clean_df.copy()
 		date_mask = (return_df[self.end_col] >= self.start_date) & (return_df[self.end_col] <= self.end_date)
 		return_df = return_df.loc[date_mask]
+
+		# TODO: Figure out why this didn't catch an empty dataframe
+		#  when using YTD and a file that only has entries up to 12/15/2021
+		if return_df is None:
+			self.prep_going_good = False
+			self.errors.append('No entries found in historical date range')
+			# return an empty dataframe
+			return pd.DataFrame()
+
 		return_df = return_df[[self.start_col, self.end_col]]
 		return_df.reset_index(drop=True, inplace=True)
+		self.prep_going_good = True
 		return return_df
 
 	# Build a dataframe with one row for each date within range
-	# TODO: Error Handling
 	def build_dates_dataframe(self) -> pd.DataFrame:
 		rng = pd.date_range(self.start_date, self.end_date)
 		return pd.DataFrame({'Date': rng, 'Frequency': 0})
 
 	# Build a dataframe with percentages for each possible outcome on any given day.
 	# This serves as an input curve to a random number selector
-	# TODO: Error Handling
 	def build_dist_dataframe(self, in_clean_df: pd.DataFrame, in_dates_df: pd.DataFrame) -> pd.DataFrame:
 		# Get a unique list of dates in the end column, and their frequency counts.
 		date_counts = in_clean_df[self.end_col].value_counts()
@@ -207,41 +241,50 @@ class SimulationCalcClass:
 		return_df = pd.DataFrame({'Count': return_df['Count'],
 									 'Frequency': return_df['Frequency_x'] + return_df['Frequency_y']})
 		return_df['Frequency'] = return_df['Frequency'].fillna(0)
-		# return_df.reset_index(drop=True, inplace=True)
 		return return_df
 
 	# Any global fields that are helpful to have frequently during simulations.
 	# Also building a general stats df for later reference
-	def final_field_preparation(self):
-		Globals.WORKING_PERCENTILES = self.dist_df.copy()
-		pct_list = (Globals.WORKING_PERCENTILES['Frequency'] * 100).round(2)
-		pct_list = pct_list.astype(str) + '%'
-		Globals.WORKING_PERCENTILES['Frequency'] = pct_list
-		self.max_entries_per_day = int(self.dist_df['Count'].max())
+	def final_field_preparation(self, in_dist_df: pd.DataFrame, in_clean_df: pd.DataFrame):
+		self.display_dist_df = self.build_display_percentiles_df(in_dist_df)
+
+		self.max_entries_per_day = int(in_dist_df['Count'].max())
 		self.days_of_simulation = (self.sim_end - self.sim_start).days
 		self.days_of_simulation += 1  # include the start date (which date math was not doing)
 
-		self.number_of_finished_items = len(self.clean_df)
-		self.number_of_days = \
-			(self.end_date - self.start_date) / np.timedelta64(1, 'D')
+		self.number_of_finished_items = len(in_clean_df)
+		self.number_of_days = (self.end_date - self.start_date).days
 		self.number_of_days += 1  # include the start date (which date math was not doing)
-		stats_data = [[Globals.MC_HIST_DATE_RANGE_KEY, f"{datetime.strftime(self.start_date, '%Y-%m-%d')} - {datetime.strftime(self.end_date, '%Y-%m-%d')}"],
-					  [Globals.SIM_DATE_RANGE_KEY, f"{datetime.strftime(self.sim_start, '%Y-%m-%d')} - {datetime.strftime(self.sim_end, '%Y-%m-%d')}"],
-					  [Globals.NUMBER_OF_SIM_DAYS_KEY, self.days_of_simulation],
-					  [Globals.NUMBER_OF_ITEMS_KEY, self.num_items_to_simulate],
-					  [Globals.MAX_ENTRIES_PER_DAY_KEY, self.max_entries_per_day]
+
+		stats_data = [[Globals.MC_HIST_DATE_RANGE_KEY, f"{datetime.strftime(self.start_date, '%Y-%m-%d')} - "
+													   f"{datetime.strftime(self.end_date, '%Y-%m-%d')}"],
+					  [Globals.SIM_DATE_RANGE_KEY, f"{datetime.strftime(self.sim_start, '%Y-%m-%d')} - "
+												   f"{datetime.strftime(self.sim_end, '%Y-%m-%d')}"],
+					  [Globals.NUMBER_OF_SIM_DAYS_KEY, f'{self.days_of_simulation}'],
+					  [Globals.NUMBER_OF_ITEMS_KEY, f'{self.num_items_to_simulate}'],
+					  [Globals.MAX_ENTRIES_PER_DAY_KEY, f'{self.max_entries_per_day}']
 					  ]
-		Globals.MC_SIMULATION_STATS = pd.DataFrame(stats_data, columns=['Category', 'Value'])
+		self.simulation_stats = pd.DataFrame(stats_data, columns=['Category', 'Value'])
+
+	def build_display_percentiles_df(self, in_dist_df: pd.DataFrame) -> pd.DataFrame:
+		return_df = in_dist_df.copy()
+		pct_list = (return_df['Frequency'] * 100).round(2)
+		pct_list = pct_list.astype(str) + '%'
+		return_df['Frequency'] = pct_list
+		return return_df
 
 	# Number of items in progress is defined as anything that started before today in the start column,
 	# and has not ended.
 	def calc_current_num_items_in_progress(self, in_df: pd.DataFrame):
 		base_df = self.remove_cancelled_rows(in_df)
-		temp_df = base_df.loc[:, self.start_col: self.end_col]
-		temp_df = temp_df.apply(pd.to_datetime, errors='coerce')
-		date_mask = ((temp_df[self.start_col] <= self.curr_date) & (temp_df[self.end_col].isnull())) | \
-					((temp_df[self.start_col] <= self.curr_date) & (temp_df[self.end_col] > self.curr_date))
-		return len(temp_df[date_mask])
+		start_bool_series = base_df[self.start_col].ne('')
+		base_df = base_df.loc[start_bool_series]
+
+		base_df = base_df.loc[:, self.start_col: self.end_col]
+		base_df = base_df.apply(pd.to_datetime, errors='coerce')
+		date_mask = ((base_df[self.start_col] <= self.curr_date) & (base_df[self.end_col].isnull())) | \
+					((base_df[self.start_col] <= self.curr_date) & (base_df[self.end_col] > self.curr_date))
+		return len(base_df[date_mask])
 
 	# =========================================
 	# MONTE CARLO SIMULATION FUNCTIONS
@@ -304,7 +347,7 @@ class SimulationCalcClass:
 					  [Globals.MC_MODE_DAYS_TO_COMPLETE_KEY, mode_completion_date]
 					  ]
 		new_data = pd.DataFrame(stats_data, columns=['Category', 'Value'])
-		Globals.MC_SIMULATION_STATS = Globals.MC_SIMULATION_STATS.append(new_data, ignore_index=True)
+		self.simulation_stats = self.simulation_stats.append(new_data, ignore_index=True)
 
 	# =========================================
 	# ERROR HANDLING
