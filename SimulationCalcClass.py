@@ -5,9 +5,9 @@ from datetime import datetime, date, timedelta
 
 
 class SimulationCalcClass:
-	def __init__(self, duration, st_col, end_col, sim_st, sim_end, num_to_complete):
-		self.start_date = date.today()
-		self.end_date = date.today()
+	def __init__(self, duration, st_col, end_col, sim_st, sim_end, num_to_complete, curr_date=datetime.today()):
+		self.start_date = curr_date
+		self.end_date = curr_date
 		self.duration = duration
 		self.start_col = str(st_col).replace(' ', '')
 		self.end_col = str(end_col).replace(' ', '')
@@ -19,6 +19,8 @@ class SimulationCalcClass:
 		else:
 			self.finishing_all_ip_items = False
 			Globals.NUM_ITEMS_TO_SIMULATE = num_to_complete
+		self.curr_date = curr_date
+
 		self.clean_df = None
 		self.dates_df = None
 		self.dist_df = None
@@ -27,15 +29,16 @@ class SimulationCalcClass:
 		self.prep_going_good = True
 		self.sims_going_good = True
 		self.generator = np.random.default_rng()
+		self.errors = []
 
 	# =========================================
 	# EXTERNALLY CALLED FUNCTIONS
 	# =========================================
 	def prep_for_simulation(self):
-		self.prep_dataframe_formatting()
-		self.determine_hist_date_range()
+		self.clean_df = self.prep_dataframe_formatting()
+		self.determine_hist_date_range(self.clean_df)
 		if self.prep_going_good:
-			self.build_clean_dataframe()
+			self.clean_df = self.build_clean_dataframe(self.clean_df)
 		if self.prep_going_good:
 			self.build_dates_dataframe()
 		if self.prep_going_good:
@@ -57,6 +60,9 @@ class SimulationCalcClass:
 			self.log_run_stats()
 		if self.sims_going_good:
 			Globals.SIMULATIONS_SUCCESSFUL = True
+
+	def get_error_msgs(self) -> list:
+		return self.errors  # pragma: no cover
 
 	# =========================================
 	# ASSUMPTIONS
@@ -87,49 +93,62 @@ class SimulationCalcClass:
 	# =========================================
 	# Build dataframe with non-null dates in end-column and start-column.
 	# filter to only items which have not been cancelled
-	def prep_dataframe_formatting(self):
-		base_df = Globals.INPUT_CSV_DATAFRAME
-		if 'Cancelled' in base_df:
-			cancelled_mask = base_df['Cancelled'] != 'Yes'
-			base_df = base_df.loc[cancelled_mask]
-		end_bool_series = pd.notnull(base_df[self.end_col])
-		self.clean_df = base_df[end_bool_series]
-		start_bool_series = pd.notnull(self.clean_df[self.start_col])
-		self.clean_df = self.clean_df[start_bool_series]
+	def prep_dataframe_formatting(self) -> pd.DataFrame:
+		return_df = self.remove_cancelled_rows(get_input_dataframe())
+
+		# since the date columns have not been converted to dates yet, it was not seeing an empty string as null.
+		end_bool_series = return_df[self.end_col].ne('')
+		return_df = return_df.loc[end_bool_series]
+		start_bool_series = return_df[self.start_col].ne('')
+		return_df = return_df.loc[start_bool_series]
 
 		# convert date columns to datetime elements.
-		self.clean_df[self.start_col] = pd.to_datetime(self.clean_df[self.start_col])
-		self.clean_df[self.end_col] = pd.to_datetime(self.clean_df[self.end_col])
+		return_df.loc[:, self.start_col] = pd.to_datetime(return_df[self.start_col])
+		return_df.loc[:, self.end_col] = pd.to_datetime(return_df[self.end_col])
+
+		return_df.reset_index(drop=True, inplace=True)
+		return return_df
+
+	def remove_cancelled_rows(self, in_df: pd.DataFrame) -> pd.DataFrame:
+		return_df = in_df.copy()
+		if 'Cancelled' in return_df:
+			cancelled_mask = (return_df['Cancelled'] != 'Yes') & (return_df['Cancelled'] != 'Cancelled')
+			return_df = return_df.loc[cancelled_mask]
+			return_df.reset_index(drop=True, inplace=True)
+		elif 'Resolution' in return_df:
+			cancelled_mask = (return_df['Resolution'] != 'Yes') & (return_df['Resolution'] != 'Cancelled')
+			return_df = return_df.loc[cancelled_mask]
+			return_df.reset_index(drop=True, inplace=True)
+		return return_df
 
 	# Use the duration to look back in time for appropriate time frame.
 	# If duration is for weeks or months, calc based on months back from the last date in the file.
 	# If duration is for a date range (i.e. YTD or last year), it will use the current date, or calc specific dates.
-	def determine_hist_date_range(self):
-		first_file_date = self.clean_df[self.end_col].min()
-		duration_value = Globals.HIST_TIMEFRAME[self.duration]
+	def determine_hist_date_range(self, in_clean_df: pd.DataFrame):
+		first_file_date = in_clean_df[self.end_col].min()
+		duration_value = 'Null'
+		if self.duration in Globals.HIST_TIMEFRAME.keys():
+			duration_value = Globals.HIST_TIMEFRAME[self.duration]
 		if duration_value == Globals.HIST_TIMEFRAME['Last Calendar Year']:
-			last_year = date.today().year - 1
-			self.start_date =  date(year=last_year,
+			last_year = self.curr_date.year - 1
+			self.start_date = datetime(year=last_year,
 								   month=1,
 								   day=1)
-			self.start_date = pd.to_datetime(self.start_date)
 			if self.start_date < first_file_date:
 				self.start_date = first_file_date
-			self.end_date = date(year=last_year,
+			self.end_date = datetime(year=last_year,
 								 month=12,
 								 day=31)
-			self.end_date = pd.to_datetime(self.end_date)
 			return
 		elif duration_value == Globals.HIST_TIMEFRAME['YTD']:
-			self.start_date = date(year=date.today().year,
+			self.start_date = datetime(year=self.curr_date.year,
 								   month=1,
 								   day=1)
-			self.start_date = pd.to_datetime(self.start_date)
 			self.start_date = max(self.start_date, first_file_date)
-			self.end_date = datetime.today()
+			self.end_date = self.curr_date
 			return
 		elif duration_value.isnumeric():
-			self.end_date = self.clean_df[self.end_col].max()
+			self.end_date = in_clean_df[self.end_col].max()
 			self.start_date = self.end_date - timedelta(days=int(duration_value))
 			self.start_date = pd.to_datetime(self.start_date)
 			self.start_date = max(self.start_date, first_file_date)
@@ -139,11 +158,14 @@ class SimulationCalcClass:
 
 	# Build a clean dataframe with only appropriate entries for calculations
 	# TODO: Error Handling
-	def build_clean_dataframe(self):
+	def build_clean_dataframe(self, in_clean_df: pd.DataFrame) -> pd.DataFrame:
 		# return entries within the appropriate date range
-		date_mask = (self.clean_df[self.end_col] >= self.start_date) & (self.clean_df[self.end_col] <= self.end_date)
-		self.clean_df = self.clean_df.loc[date_mask]
-		self.clean_df = self.clean_df[[self.start_col, self.end_col]].copy()
+		return_df = in_clean_df.copy()
+		date_mask = (return_df[self.end_col] >= self.start_date) & (return_df[self.end_col] <= self.end_date)
+		return_df = return_df.loc[date_mask]
+		return_df = return_df[[self.start_col, self.end_col]]
+		return_df.reset_index(drop=True, inplace=True)
+		return return_df
 
 	# Build a dataframe with one row for each date within range
 	# TODO: Error Handling
@@ -283,11 +305,14 @@ class SimulationCalcClass:
 					  ]
 		new_data = pd.DataFrame(stats_data, columns=['Category', 'Value'])
 		Globals.MC_SIMULATION_STATS = Globals.MC_SIMULATION_STATS.append(new_data, ignore_index=True)
-		# Globals.MC_SIMULATION_STATS
 
 	# =========================================
 	# ERROR HANDLING
 	# =========================================
-	def report_error(self, error_msg):
-		Globals.GOOD_FOR_GO = False
-		Globals.GLOBAL_ERROR_MSG = error_msg
+	def report_error(self, error_msg):  # pragma: no cover
+		Globals.GOOD_FOR_GO = False  # pragma: no cover
+		self.errors.append(error_msg)  # pragma: no cover
+
+
+def get_input_dataframe() -> pd.DataFrame:  # pragma: no cover
+	return Globals.INPUT_CSV_DATAFRAME  # pragma: no cover

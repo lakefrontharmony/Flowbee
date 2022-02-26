@@ -136,11 +136,11 @@ def test_remove_cancelled_cancelled_rows(input_flow_calculator, flow_input_df, f
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-# Test for column name of 'Status' and values of 'Yes' in cancelled rows (column export of Jira, but with 'yes' values)
-def test_remove_cancelled_status_yes_rows(input_flow_calculator, flow_input_df, flow_no_cancelled_df):
+# Test for column name of 'Resolution' and values of 'Yes' in cancelled rows (column export of Jira, but with 'yes' values)
+def test_remove_cancelled_resolution_yes_rows(input_flow_calculator, flow_input_df, flow_no_cancelled_df):
 	# setup
-	flow_input_df.rename(columns={'Cancelled': 'Status'}, inplace=True)
-	flow_no_cancelled_df.rename(columns={'Cancelled': 'Status'}, inplace=True)
+	flow_input_df.rename(columns={'Cancelled': 'Resolution'}, inplace=True)
+	flow_no_cancelled_df.rename(columns={'Cancelled': 'Resolution'}, inplace=True)
 	# call function
 	result = input_flow_calculator.remove_cancelled_rows(flow_input_df)
 	# set expectation
@@ -149,12 +149,12 @@ def test_remove_cancelled_status_yes_rows(input_flow_calculator, flow_input_df, 
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-# Test for column name of 'Status' and values of 'Cancelled' in cancelled rows (export of Jira)
-def test_remove_cancelled_status_cancelled_rows(input_flow_calculator, flow_input_df, flow_no_cancelled_df):
+# Test for column name of 'Resolution' and values of 'Cancelled' in cancelled rows (export of Jira)
+def test_remove_cancelled_resolution_cancelled_rows(input_flow_calculator, flow_input_df, flow_no_cancelled_df):
 	# setup
-	flow_input_df.rename(columns={'Cancelled': 'Status'}, inplace=True)
-	flow_no_cancelled_df.rename(columns={'Cancelled': 'Status'}, inplace=True)
-	flow_input_df.loc[flow_input_df['Status'] == 'Yes'] = 'Cancelled'
+	flow_input_df.rename(columns={'Cancelled': 'Resolution'}, inplace=True)
+	flow_no_cancelled_df.rename(columns={'Cancelled': 'Resolution'}, inplace=True)
+	flow_input_df.loc[flow_input_df['Resolution'] == 'Yes'] = 'Cancelled'
 	# call function
 	result = input_flow_calculator.remove_cancelled_rows(flow_input_df)
 	# set expectation
