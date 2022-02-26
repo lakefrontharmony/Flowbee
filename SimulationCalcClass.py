@@ -1,11 +1,11 @@
 import pandas as pd
 import numpy as np
 import Globals
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 
 
 class SimulationCalcClass:
-	def __init__(self, duration, st_col, end_col, sim_st, sim_end, num_to_complete, curr_date=datetime.today()):
+	def __init__(self, duration, st_col, end_col, sim_st, sim_end, num_to_complete, curr_date):
 		self.start_date = curr_date
 		self.end_date = curr_date
 		self.duration = duration
@@ -13,12 +13,8 @@ class SimulationCalcClass:
 		self.end_col = str(end_col).replace(' ', '')
 		self.sim_start = datetime.strptime(sim_st, '%Y-%m-%d')
 		self.sim_end = datetime.strptime(sim_end, '%Y-%m-%d')
-		if num_to_complete == 0:
-			self.finishing_all_ip_items = True
-			Globals.NUM_ITEMS_TO_SIMULATE = self.calc_current_num_items_in_progress()
-		else:
-			self.finishing_all_ip_items = False
-			Globals.NUM_ITEMS_TO_SIMULATE = num_to_complete
+		self.num_items_to_simulate = num_to_complete
+		self.finishing_all_ip_items = False
 		self.curr_date = curr_date
 
 		self.clean_df = None
@@ -35,14 +31,17 @@ class SimulationCalcClass:
 	# EXTERNALLY CALLED FUNCTIONS
 	# =========================================
 	def prep_for_simulation(self):
-		self.clean_df = self.prep_dataframe_formatting()
+		if self.num_items_to_simulate == 0:
+			self.finishing_all_ip_items = True
+			self.num_items_to_simulate = self.calc_current_num_items_in_progress(get_input_dataframe())
+		self.clean_df = self.prep_dataframe_formatting(get_input_dataframe())
 		self.determine_hist_date_range(self.clean_df)
 		if self.prep_going_good:
 			self.clean_df = self.build_clean_dataframe(self.clean_df)
 		if self.prep_going_good:
-			self.build_dates_dataframe()
+			self.dates_df = self.build_dates_dataframe()
 		if self.prep_going_good:
-			self.build_dist_dataframe()
+			self.dist_df = self.build_dist_dataframe(self.clean_df, self.dates_df)
 		if self.prep_going_good:
 			self.final_field_preparation()
 		if self.prep_going_good:
@@ -64,6 +63,8 @@ class SimulationCalcClass:
 	def get_error_msgs(self) -> list:
 		return self.errors  # pragma: no cover
 
+	def get_num_items_to_simulate(self) -> int:
+		return self.num_items_to_simulate
 	# =========================================
 	# ASSUMPTIONS
 	# =========================================
@@ -93,8 +94,8 @@ class SimulationCalcClass:
 	# =========================================
 	# Build dataframe with non-null dates in end-column and start-column.
 	# filter to only items which have not been cancelled
-	def prep_dataframe_formatting(self) -> pd.DataFrame:
-		return_df = self.remove_cancelled_rows(get_input_dataframe())
+	def prep_dataframe_formatting(self, in_df: pd.DataFrame) -> pd.DataFrame:
+		return_df = self.remove_cancelled_rows(in_df)
 
 		# since the date columns have not been converted to dates yet, it was not seeing an empty string as null.
 		end_bool_series = return_df[self.end_col].ne('')
@@ -169,16 +170,16 @@ class SimulationCalcClass:
 
 	# Build a dataframe with one row for each date within range
 	# TODO: Error Handling
-	def build_dates_dataframe(self):
+	def build_dates_dataframe(self) -> pd.DataFrame:
 		rng = pd.date_range(self.start_date, self.end_date)
-		self.dates_df = pd.DataFrame({'Date': rng, 'Frequency': 0})
+		return pd.DataFrame({'Date': rng, 'Frequency': 0})
 
 	# Build a dataframe with percentages for each possible outcome on any given day.
 	# This serves as an input curve to a random number selector
 	# TODO: Error Handling
-	def build_dist_dataframe(self):
+	def build_dist_dataframe(self, in_clean_df: pd.DataFrame, in_dates_df: pd.DataFrame) -> pd.DataFrame:
 		# Get a unique list of dates in the end column, and their frequency counts.
-		date_counts = self.clean_df[self.end_col].value_counts()
+		date_counts = in_clean_df[self.end_col].value_counts()
 		temp_df = pd.DataFrame(date_counts)
 		temp_df = temp_df.reset_index()
 		temp_df.columns = ('Date', 'Frequency')
@@ -187,9 +188,9 @@ class SimulationCalcClass:
 		# and the unique list of dates we actually finished items to one dataframe
 		# Save off the results for each day to 'Globals.THROUGHPUT_RUN_DATAFRAME' so that
 		# we can reference that after simulations are complete.
-		temp_df = pd.merge(left=self.dates_df, right=temp_df, how='left', left_on='Date', right_on='Date')
+		temp_df = pd.merge(left=in_dates_df, right=temp_df, how='left', left_on='Date', right_on='Date')
 		temp_df['Frequency_y'] = temp_df['Frequency_y'].fillna(0)
-		temp_df = pd.DataFrame({'Date': self.dates_df['Date'],
+		temp_df = pd.DataFrame({'Date': in_dates_df['Date'],
 								'Frequency': temp_df['Frequency_x'] + temp_df['Frequency_y']})
 		Globals.THROUGHPUT_RUN_DATAFRAME = temp_df
 		date_freq = temp_df['Frequency'].value_counts(normalize=True)
@@ -202,10 +203,12 @@ class SimulationCalcClass:
 		# numbers in between. This was added on because if you completed 1, 2, and 10 items, future calcs were looking
 		# for a list of frequencies based on 0 - 10 (not a list of 3 frequencies representing 1, 2, and 10)
 		blank_comp_df = pd.DataFrame({'Count': np.arange(0, temp_dist_df['Count'].max()+1, 1), 'Frequency': 0})
-		self.dist_df = pd.merge(left=blank_comp_df, right=temp_dist_df, how='left', left_on='Count', right_on='Count')
-		self.dist_df = pd.DataFrame({'Count': self.dist_df['Count'],
-									 'Frequency': self.dist_df['Frequency_x'] + self.dist_df['Frequency_y']})
-		self.dist_df['Frequency'] = self.dist_df['Frequency'].fillna(0)
+		return_df = pd.merge(left=blank_comp_df, right=temp_dist_df, how='left', left_on='Count', right_on='Count')
+		return_df = pd.DataFrame({'Count': return_df['Count'],
+									 'Frequency': return_df['Frequency_x'] + return_df['Frequency_y']})
+		return_df['Frequency'] = return_df['Frequency'].fillna(0)
+		# return_df.reset_index(drop=True, inplace=True)
+		return return_df
 
 	# Any global fields that are helpful to have frequently during simulations.
 	# Also building a general stats df for later reference
@@ -225,22 +228,19 @@ class SimulationCalcClass:
 		stats_data = [[Globals.MC_HIST_DATE_RANGE_KEY, f"{datetime.strftime(self.start_date, '%Y-%m-%d')} - {datetime.strftime(self.end_date, '%Y-%m-%d')}"],
 					  [Globals.SIM_DATE_RANGE_KEY, f"{datetime.strftime(self.sim_start, '%Y-%m-%d')} - {datetime.strftime(self.sim_end, '%Y-%m-%d')}"],
 					  [Globals.NUMBER_OF_SIM_DAYS_KEY, self.days_of_simulation],
-					  [Globals.NUMBER_OF_ITEMS_KEY, Globals.NUM_ITEMS_TO_SIMULATE],
+					  [Globals.NUMBER_OF_ITEMS_KEY, self.num_items_to_simulate],
 					  [Globals.MAX_ENTRIES_PER_DAY_KEY, self.max_entries_per_day]
 					  ]
 		Globals.MC_SIMULATION_STATS = pd.DataFrame(stats_data, columns=['Category', 'Value'])
 
 	# Number of items in progress is defined as anything that started before today in the start column,
 	# and has not ended.
-	def calc_current_num_items_in_progress(self):
-		base_df = Globals.INPUT_CSV_DATAFRAME
-		# filter to only items which have not been cancelled
-		if 'Cancelled' in base_df:
-			cancelled_mask = base_df['Cancelled'] != 'Yes'
-			base_df = base_df.loc[cancelled_mask]
+	def calc_current_num_items_in_progress(self, in_df: pd.DataFrame):
+		base_df = self.remove_cancelled_rows(in_df)
 		temp_df = base_df.loc[:, self.start_col: self.end_col]
 		temp_df = temp_df.apply(pd.to_datetime, errors='coerce')
-		date_mask = (temp_df[self.start_col] <= np.datetime64('Today')) & (temp_df[self.end_col].isnull())
+		date_mask = ((temp_df[self.start_col] <= self.curr_date) & (temp_df[self.end_col].isnull())) | \
+					((temp_df[self.start_col] <= self.curr_date) & (temp_df[self.end_col] > self.curr_date))
 		return len(temp_df[date_mask])
 
 	# =========================================
@@ -250,7 +250,7 @@ class SimulationCalcClass:
 		how_many_output_array = np.zeros([0, 1])
 		when_output_array = np.zeros([0, 1])
 		prob_dist = self.dist_df['Frequency'].tolist()
-		simulation_days = int(Globals.NUM_ITEMS_TO_SIMULATE * 20)
+		simulation_days = int(self.num_items_to_simulate * 20)
 		for i in range(iterations):
 			# How Many
 			daily_entries_completed_list = self.generator.choice(self.max_entries_per_day+1, simulation_days, p=prob_dist)
@@ -263,8 +263,8 @@ class SimulationCalcClass:
 			# cumsum was never able to complete before hitting the end of the array. Added a default of 1 day and check
 			# to verify that the first day is smaller than the num of items to simulate before doing cumsum.
 			num_of_days = 1
-			if daily_entries_completed_list[0] < Globals.NUM_ITEMS_TO_SIMULATE:
-				num_of_days = (np.cumsum(daily_entries_completed_list) < Globals.NUM_ITEMS_TO_SIMULATE).argmin()
+			if daily_entries_completed_list[0] < self.num_items_to_simulate:
+				num_of_days = (np.cumsum(daily_entries_completed_list) < self.num_items_to_simulate).argmin()
 			if num_of_days == 0:
 				print('reached the end of the random array before finding date of completion')
 				self.sims_going_good = False

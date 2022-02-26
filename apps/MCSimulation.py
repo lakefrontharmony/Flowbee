@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import timedelta
+from datetime import timedelta, datetime
 from SimulationCalcClass import SimulationCalcClass
 import Globals
 
@@ -38,7 +38,7 @@ def app():
         return
 
     simulator = SimulationCalcClass(hist_duration, start_col, end_col, str(sim_start_date), str(sim_end_date),
-                                    items_to_complete)
+                                    items_to_complete, datetime.today())
     simulator.prep_for_simulation()
     if not Globals.GOOD_FOR_GO:
         return
@@ -64,10 +64,10 @@ def app():
     st.bar_chart(build_how_many_disp_df())
 
     # Display "When" data
-    st.header(f'When will we finish {Globals.NUM_ITEMS_TO_SIMULATE} items?')
+    st.header(f'When will we finish {simulator.get_num_items_to_simulate()} items?')
     st.write(f'This grid helps you state, '
              f'"After running {Globals.NUM_SIMULATION_ITERATIONS} simulations, '
-             f'{Globals.NUM_ITEMS_TO_SIMULATE} or more items completed by yyyy-mm-dd"')
+             f'{simulator.get_num_items_to_simulate()} or more items completed by yyyy-mm-dd"')
     st.write(Globals.WHEN_PERCENTILES.astype(str))
     # Results dataframe
     st.bar_chart(build_when_disp_df())
