@@ -48,13 +48,13 @@ def app():
 	chart_builder = ChartBuilderClass(start_col, end_col, name_col, use_start_date, str(chart_start_date),
 									  date.today(), daily_wip_limit)
 	chart_builder.prep_for_charting()
-	if not Globals.GOOD_FOR_GO:
+	if chart_builder.prep_errors_were_found():
 		st.subheader('Errors were found when preparing to Chart data:')
 		st.write(chart_builder.get_errors())
 		return
 
 	chart_builder.build_charts()
-	if not Globals.CHARTS_BUILT_SUCCESSFULLY:
+	if chart_builder.build_errors_were_found():
 		st.subheader('Errors were found while creating Charts:')
 		st.write(chart_builder.get_errors())
 		return

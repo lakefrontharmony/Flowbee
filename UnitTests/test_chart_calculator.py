@@ -324,7 +324,7 @@ def cycle_time_scatter_df():
 								 'CycleTime85', 'CycleTime50', 'CycleTimeAvg'])
 
 
-# This is the build of the FlowCalcClass
+# This is the build of the ChartBuilderClass
 @pytest.fixture()
 def input_chart_builder():
 	start_col = 'InProgress'
