@@ -126,8 +126,7 @@ class SimulationCalcClass:
 		return_df = return_df.loc[start_bool_series]
 
 		if return_df.empty:
-			self.prep_going_good = False
-			self.errors.append('No entries after removing cancelled and not-started entries')
+			self.report_error('No entries after removing cancelled and not-started entries')
 			# return an empty dataframe
 			return pd.DataFrame()
 
@@ -185,7 +184,6 @@ class SimulationCalcClass:
 			self.start_date = pd.to_datetime(self.start_date)
 			self.start_date = max(self.start_date, first_file_date)
 			return
-		self.prep_going_good = False
 		self.report_error('Unexpected duration of simulation received')
 
 	# Build a clean dataframe with only appropriate entries for calculations
@@ -196,8 +194,7 @@ class SimulationCalcClass:
 		return_df = return_df.loc[date_mask]
 
 		if return_df.empty:
-			self.prep_going_good = False
-			self.errors.append('No entries found in historical date range')
+			self.report_error('No entries found in historical date range')
 			# return an empty dataframe
 			return pd.DataFrame()
 
@@ -356,6 +353,7 @@ class SimulationCalcClass:
 	# =========================================
 	def report_error(self, error_msg):  # pragma: no cover
 		Globals.GOOD_FOR_GO = False  # pragma: no cover
+		self.prep_going_good = False  # pragma: no cover
 		self.errors.append(error_msg)  # pragma: no cover
 
 
