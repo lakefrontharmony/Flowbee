@@ -38,6 +38,16 @@ def simulator_input_df():
 						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
 
 
+# This is the dataframe that mimics an input file and has no entries after clearing out not-started and cancelled
+# entries as of 02/15/2022
+@pytest.fixture()
+def simulator_input_not_started_df():
+	return pd.DataFrame([['A1', 'TestA1', 'Parent1', '2021-11-01', '2021-11-10', '2021-12-01', 'Yes', 'Strategic'],
+						 ['A4', 'TestA4', 'Parent1', '2022-01-05', '2022-01-10', '2022-01-30', 'Cancelled', 'Strategic'],
+						 ['C4', 'TestC4', 'Parent3', '2022-01-05', '', '', '', 'Strategic']],
+						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
+
+
 # This is the dataframe after prep_dataframe_formatting
 @pytest.fixture()
 def simulator_prepped_df():
@@ -479,6 +489,49 @@ def test_prep_with_current_wip(input_simulator_builder_use_current_wip, simulato
 
 	# assertion
 	assert result_num_items_to_simulate == expected_num_items_to_simulate
+
+
+# Full test of prep_for_simulations where we don't have entries for the curr_date.year and it fails during prep
+def test_prep_future_ytd_failure_test(input_simulator_builder, simulator_input_df, mocker):
+	# setup
+	mocker.patch('SimulationCalcClass.get_input_dataframe', return_value=simulator_input_df)
+	input_simulator_builder.curr_date = datetime(2023, 2, 15)
+	input_simulator_builder.duration = 'YTD'
+	# call function
+	input_simulator_builder.prep_for_simulation()
+	result_errors_found = input_simulator_builder.prep_errors_were_found()
+
+	# set expectation
+	expected_errors_found = True
+	expected_error_msg_exists = False
+	expected_error_list = input_simulator_builder.get_error_msgs()
+	if expected_error_list.count('No entries found in historical date range') > 0:
+		expected_error_msg_exists = True
+
+	# assertion
+	assert result_errors_found == expected_errors_found
+	assert expected_error_msg_exists is True
+
+
+# Full test of prep_for_simulations where we don't have entries after removing cancelled and not started entries
+def test_prep_no_in_progress_after_cancelled_and_null_check(input_simulator_builder, simulator_input_not_started_df,
+															mocker):
+	# setup
+	mocker.patch('SimulationCalcClass.get_input_dataframe', return_value=simulator_input_not_started_df)
+	# call function
+	input_simulator_builder.prep_for_simulation()
+	result_errors_found = input_simulator_builder.prep_errors_were_found()
+
+	# set expectation
+	expected_errors_found = True
+	expected_error_msg_exists = False
+	expected_error_list = input_simulator_builder.get_error_msgs()
+	if expected_error_list.count('No entries after removing cancelled and not-started entries') > 0:
+		expected_error_msg_exists = True
+
+	# assertion
+	assert result_errors_found == expected_errors_found
+	assert expected_error_msg_exists is True
 
 
 """
