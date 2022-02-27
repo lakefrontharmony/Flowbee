@@ -21,7 +21,12 @@ class SimulationCalcClass:
 		self.dates_df = None
 		self.dist_df = None
 		self.display_dist_df = None
+		self.throughput_run_df = None
 		self.simulation_stats = None
+		self.how_many_sim_output = None
+		self.when_sim_output = None
+		self.how_many_percentiles = None
+		self.when_percentiles = None
 		self.max_entries_per_day = 0
 		self.days_of_simulation = 0
 		self.prep_going_good = True
@@ -52,13 +57,14 @@ class SimulationCalcClass:
 
 	# TODO: Build in Error Handling through simulations
 	def run_mc_simulations(self, iterations):
-		self.run_monte_carlo_simulations(iterations)
+		self.run_monte_carlo_simulations(iterations, self.dist_df, self.max_entries_per_day, self.days_of_simulation)
 		if self.sims_going_good:
-			self.build_how_many_percentile_dataframe()
+			self.how_many_percentiles = self.build_how_many_percentile_dataframe(self.how_many_sim_output)
 		if self.sims_going_good:
-			self.build_when_percentile_dataframe()
+			self.when_percentiles = self.build_when_percentile_dataframe(self.when_sim_output)
 		if self.sims_going_good:
-			self.log_run_stats()
+			self.simulation_stats = self.log_run_stats(self.when_sim_output, self.how_many_sim_output,
+													   self.simulation_stats)
 
 	def prep_errors_were_found(self) -> bool:  # pragma: no cover
 		if self.prep_going_good:  # pragma: no cover
@@ -86,6 +92,21 @@ class SimulationCalcClass:
 
 	def get_simulation_start_date(self) -> datetime:  # pragma: no cover
 		return self.sim_start  # pragma: no cover
+
+	def get_how_many_sim_output(self) -> pd.DataFrame:  # pragma: no cover
+		return self.how_many_sim_output  # pragma: no cover
+
+	def get_when_sim_output(self) -> pd.DataFrame:  # pragma: no cover
+		return self.when_sim_output  # pragma: no cover
+
+	def get_how_many_percentiles(self) -> pd.DataFrame:  # pragma: no cover
+		return self.how_many_percentiles  # pragma: no cover
+
+	def get_when_percentiles(self) -> pd.DataFrame:  # pragma: no cover
+		return self.when_percentiles  # pragma: no cover
+
+	def get_throughput_run(self) -> pd.DataFrame:  # pragma: no cover
+		return self.throughput_run_df  # pragma: no cover
 
 	# =========================================
 	# ASSUMPTIONS
@@ -219,13 +240,13 @@ class SimulationCalcClass:
 
 		# merge the full list of dates in this period
 		# and the unique list of dates we actually finished items to one dataframe
-		# Save off the results for each day to 'Globals.THROUGHPUT_RUN_DATAFRAME' so that
+		# Save off the results for each day to 'self.throughput_run_dataframe' so that
 		# we can reference that after simulations are complete.
 		temp_df = pd.merge(left=in_dates_df, right=temp_df, how='left', left_on='Date', right_on='Date')
 		temp_df['Frequency_y'] = temp_df['Frequency_y'].fillna(0)
 		temp_df = pd.DataFrame({'Date': in_dates_df['Date'],
 								'Frequency': temp_df['Frequency_x'] + temp_df['Frequency_y']})
-		Globals.THROUGHPUT_RUN_DATAFRAME = temp_df
+		self.throughput_run_df = temp_df
 		date_freq = temp_df['Frequency'].value_counts(normalize=True)
 		temp_dist_df = pd.DataFrame(date_freq)
 		temp_dist_df = temp_dist_df.reset_index()
@@ -288,15 +309,16 @@ class SimulationCalcClass:
 	# =========================================
 	# MONTE CARLO SIMULATION FUNCTIONS
 	# =========================================
-	def run_monte_carlo_simulations(self, iterations):
+	def run_monte_carlo_simulations(self, iterations: int, in_dist_df: pd.DataFrame, in_max_per_day: int, in_days_of_sim: int):
 		how_many_output_array = np.zeros([0, 1])
 		when_output_array = np.zeros([0, 1])
-		prob_dist = self.dist_df['Frequency'].tolist()
+		prob_dist = in_dist_df['Frequency'].tolist()
 		simulation_days = int(self.num_items_to_simulate * 20)
 		for i in range(iterations):
 			# How Many
-			daily_entries_completed_list = self.generator.choice(self.max_entries_per_day+1, simulation_days, p=prob_dist)
-			how_many_completed_list = daily_entries_completed_list[:self.days_of_simulation]
+			daily_entries_completed_list = self.generate_random_daily_completed_list(in_max_per_day, simulation_days, prob_dist)
+			# daily_entries_completed_list = self.generator.choice(in_max_per_day+1, simulation_days, p=prob_dist)
+			how_many_completed_list = daily_entries_completed_list[:in_days_of_sim]
 			how_many_output_array = np.append(how_many_output_array, int(sum(how_many_completed_list)))
 
 			# When
@@ -306,54 +328,61 @@ class SimulationCalcClass:
 			# to verify that the first day is smaller than the num of items to simulate before doing cumsum.
 			num_of_days = 1
 			if daily_entries_completed_list[0] < self.num_items_to_simulate:
-				num_of_days = (np.cumsum(daily_entries_completed_list) < self.num_items_to_simulate).argmin()
+				# add one to this number because the index is zero based and we want to know the count of the location
+				num_of_days = (np.cumsum(daily_entries_completed_list) < self.num_items_to_simulate).argmin() + 1
 			if num_of_days == 0:
-				print('reached the end of the random array before finding date of completion')
-				self.sims_going_good = False
+				self.report_error(f'Could not calculate the number of days to complete {self.num_items_to_simulate}')
 				break
 			when_output_array = np.append(when_output_array, num_of_days)
 
-		Globals.HOW_MANY_SIM_OUTPUT = pd.DataFrame(how_many_output_array, columns=['Output'])
-		Globals.WHEN_SIM_OUTPUT = pd.DataFrame(when_output_array, columns=['Output'])
+		self.how_many_sim_output = pd.DataFrame(how_many_output_array, columns=['Output'])
+		self.when_sim_output = pd.DataFrame(when_output_array, columns=['Output'])
 
-	def build_how_many_percentile_dataframe(self):
+	def generate_random_daily_completed_list(self, in_max_per_day: int, simulation_days: int, prob_dist: list):  # pragma: no cover
+		return self.generator.choice(in_max_per_day+1, simulation_days, p=prob_dist)  # pragma: no cover
+
+	def build_how_many_percentile_dataframe(self, in_how_many_sim_output: pd.DataFrame) -> pd.DataFrame:
 		calc_percentiles = 1 - Globals.PERCENTILES_LIST
-		Globals.HOW_MANY_PERCENTILES = Globals.HOW_MANY_SIM_OUTPUT.quantile(calc_percentiles)
-		Globals.HOW_MANY_PERCENTILES.rename(columns={'Output': 'Count_Percentiles'}, inplace=True)
-		Globals.HOW_MANY_PERCENTILES.index = Globals.PERCENTILES_LIST
+		return_df = in_how_many_sim_output.quantile(calc_percentiles)
+		return_df.rename(columns={'Output': 'Count_Percentiles'}, inplace=True)
+		return_df.index = Globals.PERCENTILES_LIST
+		return return_df
 
-	def build_when_percentile_dataframe(self):
-		Globals.WHEN_PERCENTILES = Globals.WHEN_SIM_OUTPUT.quantile(Globals.PERCENTILES_LIST)
-		Globals.WHEN_PERCENTILES.rename(columns={'Output': 'Days_Percentiles'}, inplace=True)
-		Globals.WHEN_PERCENTILES['End_date'] = Globals.WHEN_PERCENTILES['Days_Percentiles']
-		Globals.WHEN_PERCENTILES['End_date'] = \
-			Globals.WHEN_PERCENTILES['End_date'].apply(lambda duration: self.sim_start + timedelta(days=duration))
-		Globals.WHEN_PERCENTILES['End_date'] = Globals.WHEN_PERCENTILES['End_date'].dt.strftime('%Y-%m-%d')
+	def build_when_percentile_dataframe(self, in_when_sim_output: pd.DataFrame) -> pd.DataFrame:
+		return_df = in_when_sim_output.quantile(Globals.PERCENTILES_LIST)
+		return_df.rename(columns={'Output': 'Days_Percentiles'}, inplace=True)
+		return_df['End_Date'] = return_df['Days_Percentiles']
+		return_df['End_Date'] = \
+			return_df['End_Date'].apply(lambda duration: self.sim_start + timedelta(days=duration))
+		return_df['End_Date'] = return_df['End_Date'].dt.strftime('%Y-%m-%d')
+		return return_df
 
 	# Append to the General Stats df with run stats.
-	def log_run_stats(self):
-		avg_days_to_completion = round(sum(Globals.WHEN_SIM_OUTPUT['Output']) / len(Globals.WHEN_SIM_OUTPUT['Output']), 0)
+	def log_run_stats(self, in_when_sim_output: pd.DataFrame, in_how_many_sim_output: pd.DataFrame,
+					  in_sim_stats: pd.DataFrame) -> pd.DataFrame:
+		avg_days_to_completion = round(sum(in_when_sim_output['Output']) / len(in_when_sim_output['Output']), 0)
 		avg_completion_date = self.sim_start + timedelta(days=avg_days_to_completion)
 		avg_completion_date = avg_completion_date.strftime('%Y-%m-%d')
 
-		mode_days_to_completion = Globals.WHEN_SIM_OUTPUT.mode()['Output'][0]
+		mode_days_to_completion = in_when_sim_output.mode()['Output'][0]
 		mode_completion_date = self.sim_start + timedelta(days=mode_days_to_completion)
 		mode_completion_date = mode_completion_date.strftime('%Y-%m-%d')
 		stats_data = [[Globals.MC_AVG_NUM_COMPLETED_KEY,
-					   f'{int(sum(Globals.HOW_MANY_SIM_OUTPUT["Output"]) / len(Globals.HOW_MANY_SIM_OUTPUT["Output"]))} items'],
-					  [Globals.MC_MODE_NUM_COMPLETED_KEY, f'{int(Globals.HOW_MANY_SIM_OUTPUT.mode()["Output"][0])} items'],
+					   f'{int(sum(in_how_many_sim_output["Output"]) / len(in_how_many_sim_output["Output"]))} items'],
+					  [Globals.MC_MODE_NUM_COMPLETED_KEY, f'{int(in_how_many_sim_output.mode()["Output"][0])} items'],
 					  [Globals.MC_AVG_DAYS_TO_COMPLETE_KEY, avg_completion_date],
 					  [Globals.MC_MODE_DAYS_TO_COMPLETE_KEY, mode_completion_date]
 					  ]
 		new_data = pd.DataFrame(stats_data, columns=['Category', 'Value'])
-		self.simulation_stats = self.simulation_stats.append(new_data, ignore_index=True)
+		return in_sim_stats.append(new_data, ignore_index=True)
+
 
 	# =========================================
 	# ERROR HANDLING
 	# =========================================
 	def report_error(self, error_msg):  # pragma: no cover
-		Globals.GOOD_FOR_GO = False  # pragma: no cover
 		self.prep_going_good = False  # pragma: no cover
+		self.sims_going_good = False  # pragma: no cover
 		self.errors.append(error_msg)  # pragma: no cover
 
 

@@ -52,10 +52,6 @@ class FlowCalcClass:
 		if self.prep_going_good:
 			self.flow_metric_stats = self.final_values_preparation(self.start_date, self.end_date,
 																   self.clean_df, self.wip_df)
-		if self.prep_going_good:
-			Globals.GOOD_FOR_GO = True
-		else:
-			Globals.GLOBAL_ERROR_MSG = str(self.errors)
 
 	def run_flow_metrics(self):
 		avg_lead_time = self.calculate_average_lead_time(self.clean_df, self.number_of_finished_items)

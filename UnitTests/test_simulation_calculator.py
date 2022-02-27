@@ -159,10 +159,150 @@ def simulation_stats_one_month():
 	return pd.DataFrame([['Historical Date Range', '2022-01-30 - 2022-03-01'],
 						 ['Simulation Date Range', '2022-01-19 - 2022-04-12'],
 						 ['Number of Days For "How Many" Sim', '84'],
-						 ['Number of Items For "When" Sim', '20'],
+						 ['Number of Items For "When" Sim', '4'],
 						 ['Max Throughput Per Day:', '3']],
 						 columns=['Category', 'Value'])
 
+
+@pytest.fixture()
+def final_sim_stats():
+	return pd.DataFrame([['Historical Date Range', '2022-01-30 - 2022-03-01'],
+						 ['Simulation Date Range', '2022-01-19 - 2022-04-12'],
+						 ['Number of Days For "How Many" Sim', '84'],
+						 ['Number of Items For "When" Sim', '4'],
+						 ['Max Throughput Per Day:', '3'],
+						 ['Avg # Completed In "How Many" Sim (Rounded)', '6 items'],
+						 ['Most Freq. # Completed In "How Many" Sim', '6 items'],
+						 ['Avg Date To Complete Items In "When" Sim (Rounded)', '2022-02-01'],
+						 ['Most Freq. Date To Complete Items in "When" Sim', '2022-02-01']],
+						columns=['Category', 'Value'])
+
+
+# This is the mock return from np.random.default_rng().choice
+# TODO: Make this in to a function that will return a different answer each of the 10 times to verify future calcs
+@pytest.fixture()
+def daily_entries_completed_mocked_list():
+	return [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0,
+			0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+			0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+			0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
+
+
+# This is the dataframe after run_monte_carlo_simulations for "how_many" simulation (10 iterations)
+@pytest.fixture()
+def how_many_sim_output():
+	return pd.DataFrame([[6.0],
+						 [6.0],
+						 [6.0],
+						 [6.0],
+						 [6.0],
+						 [6.0],
+						 [6.0],
+						 [6.0],
+						 [6.0],
+						 [6.0]],
+						 columns=['Output'])
+
+
+# This is the dataframe after run_monte_carlo_simulations for "when" simulation (10 iterations)
+@pytest.fixture()
+def when_sim_output():
+	return pd.DataFrame([[13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0]],
+						 columns=['Output'])
+
+
+@pytest.fixture()
+def how_many_pct_df():
+	return pd.DataFrame([[6.0],
+						 [6.0],
+						 [6.0],
+						 [6.0]],
+						columns=['Count_Percentiles'], index=[0.95, 0.85, 0.7, 0.5])
+
+
+@pytest.fixture()
+def when_pct_df():
+	return pd.DataFrame([[13.0, '2022-02-01'],
+						 [13.0, '2022-02-01'],
+						 [13.0, '2022-02-01'],
+						 [13.0, '2022-02-01']],
+						columns=['Days_Percentiles', 'End_Date'], index=[0.95, 0.85, 0.7, 0.5])
+
+
+# This is the "how_many_sim_output" dataframe for the full run_mc_simulations test (10 iterations)
+@pytest.fixture()
+def full_how_many_sim_output():
+	return pd.DataFrame([[12.0],
+						 [12.0],
+						 [12.0],
+						 [12.0],
+						 [12.0],
+						 [12.0],
+						 [12.0],
+						 [12.0],
+						 [12.0],
+						 [12.0]],
+						 columns=['Output'])
+
+
+# This is the "when_sim_output" dataframe for the full run_mc_simulations test (10 iterations)
+@pytest.fixture()
+def full_when_sim_output():
+	return pd.DataFrame([[13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0],
+						 [13.0]],
+						 columns=['Output'])
+
+
+# This is the "how_many_pct" dataframe for the full run_mc_simulations test (10 iterations)
+@pytest.fixture()
+def full_how_many_pct_df():
+	return pd.DataFrame([[12.0],
+						 [12.0],
+						 [12.0],
+						 [12.0]],
+						columns=['Count_Percentiles'], index=[0.95, 0.85, 0.7, 0.5])
+
+
+# This is the "when_pct" dataframe for the full run_mc_simulations test (10 iterations)
+@pytest.fixture()
+def full_when_pct_df():
+	return pd.DataFrame([[13.0, '2022-02-01'],
+						 [13.0, '2022-02-01'],
+						 [13.0, '2022-02-01'],
+						 [13.0, '2022-02-01']],
+						columns=['Days_Percentiles', 'End_Date'], index=[0.95, 0.85, 0.7, 0.5])
+
+
+# This is the "sim_stats" dataframe for the full run_mc_simulations test (10 iterations)
+@pytest.fixture()
+def full_final_sim_stats():
+	return pd.DataFrame([['Historical Date Range', '2022-01-30 - 2022-03-01'],
+						 ['Simulation Date Range', '2022-01-19 - 2022-04-12'],
+						 ['Number of Days For "How Many" Sim', '84'],
+						 ['Number of Items For "When" Sim', '4'],
+						 ['Max Throughput Per Day:', '3'],
+						 ['Avg # Completed In "How Many" Sim (Rounded)', '12 items'],
+						 ['Most Freq. # Completed In "How Many" Sim', '12 items'],
+						 ['Avg Date To Complete Items In "When" Sim (Rounded)', '2022-02-01'],
+						 ['Most Freq. Date To Complete Items in "When" Sim', '2022-02-01']],
+						columns=['Category', 'Value'])
 
 # This is the build of the SimulationCalcClass
 @pytest.fixture()
@@ -172,7 +312,7 @@ def input_simulator_builder():
 	end_col = 'Done'
 	sim_start = '2022-01-19'
 	sim_end = '2022-04-12'
-	num_to_complete = 20
+	num_to_complete = 4
 	curr_date = datetime(2022, 2, 15)
 	return SimulationCalcClass(duration, start_col, end_col, sim_start, sim_end, num_to_complete, curr_date)
 
@@ -532,6 +672,93 @@ def test_prep_no_in_progress_after_cancelled_and_null_check(input_simulator_buil
 	# assertion
 	assert result_errors_found == expected_errors_found
 	assert expected_error_msg_exists is True
+
+
+# running the when and how many simulations
+def test_run_monte_carlo_simulations(input_simulator_builder, dist_df_one_month, daily_entries_completed_mocked_list,
+									 how_many_sim_output, when_sim_output, mocker):
+	# setup
+	mocker.patch('SimulationCalcClass.SimulationCalcClass.generate_random_daily_completed_list',
+				 return_value=daily_entries_completed_mocked_list)
+	# call function
+	input_simulator_builder.run_monte_carlo_simulations(10, dist_df_one_month, 3, 30)
+	result_how_many = input_simulator_builder.how_many_sim_output
+	result_when = input_simulator_builder.when_sim_output
+	# set expectation
+	expected_how_many = how_many_sim_output
+	expected_when = when_sim_output
+	# assertion
+	assert pd.testing.assert_frame_equal(result_how_many, expected_how_many) is None
+	assert pd.testing.assert_frame_equal(result_when, expected_when) is None
+
+
+# building the "how_many" percentiles dataframe
+def test_build_how_many_percentile_dataframe(input_simulator_builder, how_many_sim_output, how_many_pct_df):
+	# setup
+	# call function
+	result = input_simulator_builder.build_how_many_percentile_dataframe(how_many_sim_output)
+	# set expectation
+	expected = how_many_pct_df
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+# building the "when" percentiles dataframe
+def test_build_when_percentile_dataframe(input_simulator_builder, when_sim_output, when_pct_df):
+	# setup
+	# call function
+	result = input_simulator_builder.build_when_percentile_dataframe(when_sim_output)
+	# set expectation
+	expected = when_pct_df
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+# building the "how_many" percentiles dataframe
+def test_log_run_stats(input_simulator_builder, when_sim_output, how_many_sim_output,
+					   simulation_stats_one_month, final_sim_stats):
+	# setup
+	# call function
+	result = input_simulator_builder.log_run_stats(when_sim_output, how_many_sim_output, simulation_stats_one_month)
+	# set expectation
+	expected = final_sim_stats
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+# full run of monte carlo simulations.
+def test_run_mc_simulations(input_simulator_builder, simulator_input_df, daily_entries_completed_mocked_list,
+							full_how_many_sim_output, full_when_sim_output, full_how_many_pct_df, full_when_pct_df,
+							full_final_sim_stats, mocker):
+	# setup
+	num_iterations = 10
+	mocker.patch('SimulationCalcClass.get_input_dataframe', return_value=simulator_input_df)
+	mocker.patch('SimulationCalcClass.SimulationCalcClass.generate_random_daily_completed_list',
+				 return_value=daily_entries_completed_mocked_list)
+	input_simulator_builder.prep_for_simulation()
+
+	# call function
+	input_simulator_builder.run_mc_simulations(num_iterations)
+	result_errors_found = input_simulator_builder.calc_errors_were_found()
+	result_how_many_output = input_simulator_builder.how_many_sim_output
+	result_when_output = input_simulator_builder.when_sim_output
+	result_how_many_pct = input_simulator_builder.how_many_percentiles
+	result_when_pct = input_simulator_builder.when_percentiles
+	result_sim_stats = input_simulator_builder.simulation_stats
+	# set expectation
+	expected_errors_found = False
+	expected_how_many = full_how_many_sim_output
+	expected_when = full_when_sim_output
+	expected_how_many_pct = full_how_many_pct_df
+	expected_when_pct = full_when_pct_df
+	expected_sim_stats = full_final_sim_stats
+	# assertion
+	assert result_errors_found == expected_errors_found
+	assert pd.testing.assert_frame_equal(result_how_many_output, expected_how_many) is None
+	assert pd.testing.assert_frame_equal(result_when_output, expected_when) is None
+	assert pd.testing.assert_frame_equal(result_how_many_pct, expected_how_many_pct) is None
+	assert pd.testing.assert_frame_equal(result_when_pct, expected_when_pct) is None
+	assert pd.testing.assert_frame_equal(result_sim_stats, expected_sim_stats) is None
 
 
 """

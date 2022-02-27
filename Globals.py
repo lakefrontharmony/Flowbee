@@ -25,11 +25,6 @@ FLOW_METRIC_CATEGORY_COUNT_KEY = 'Count'
 FLOW_METRIC_WORK_MIX_KEY = 'Work Mix %'
 FLOW_METRIC_CATEGORY_KEY = 'Category'
 
-GOOD_FOR_GO = False
-SIMULATIONS_SUCCESSFUL = False
-CHARTS_BUILT_SUCCESSFULLY = False
-GLOBAL_ERROR_MSG = ''
-
 MC_HIST_DATE_RANGE_KEY = 'Historical Date Range'
 SIM_DATE_RANGE_KEY = 'Simulation Date Range'
 SIM_END_DATE_KEY = 'Simulation End Date'
@@ -40,11 +35,6 @@ MC_AVG_NUM_COMPLETED_KEY = 'Avg # Completed In "How Many" Sim (Rounded)'
 MC_MODE_NUM_COMPLETED_KEY = 'Most Freq. # Completed In "How Many" Sim'
 MC_AVG_DAYS_TO_COMPLETE_KEY = 'Avg Date To Complete Items In "When" Sim (Rounded)'
 MC_MODE_DAYS_TO_COMPLETE_KEY = 'Most Freq. Date To Complete Items in "When" Sim'
-THROUGHPUT_RUN_DATAFRAME = None
-HOW_MANY_SIM_OUTPUT = None
-HOW_MANY_PERCENTILES = None
-WHEN_SIM_OUTPUT = None
-WHEN_PERCENTILES = None
 
 PERCENTILES_LIST = np.array([0.95,
 							 0.85,
@@ -52,7 +42,7 @@ PERCENTILES_LIST = np.array([0.95,
 							 0.50])
 
 
-def build_date_csv_file(input_file_path) -> pd.DataFrame:
-	return_file = pd.read_csv(input_file_path)
-	return_file.columns = return_file.columns.str.replace(' ', '')
-	return return_file
+def build_date_csv_file(input_file_path) -> pd.DataFrame:  # pragma: no cover
+	return_file = pd.read_csv(input_file_path)  # pragma: no cover
+	return_file.columns = return_file.columns.str.replace(' ', '')  # pragma: no cover
+	return return_file  # pragma: no cover

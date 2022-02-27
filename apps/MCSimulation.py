@@ -64,30 +64,30 @@ def app():
     st.header(f'How Many items will we complete by {sim_end_date}?')
     st.write(f'This grid helps you state, "After running {num_simulation_iterations} simulations, '
              f'XX or more items completed in YY% of cases."')
-    st.write(Globals.HOW_MANY_PERCENTILES.astype(str))
+    st.write(simulator.get_how_many_percentiles().astype(str))
     # Results dataframe
-    st.bar_chart(build_how_many_disp_df())
+    st.bar_chart(build_how_many_disp_df(simulator.get_how_many_sim_output()))
 
     # Display "When" data
     st.header(f'When will we finish {simulator.get_num_items_to_simulate()} items?')
     st.write(f'This grid helps you state, '
              f'"After running {num_simulation_iterations} simulations, '
              f'{simulator.get_num_items_to_simulate()} or more items completed by yyyy-mm-dd"')
-    st.write(Globals.WHEN_PERCENTILES.astype(str))
+    st.write(simulator.get_when_percentiles().astype(str))
     # Results dataframe
-    st.bar_chart(build_when_disp_df(simulator.get_simulation_start_date()))
+    st.bar_chart(build_when_disp_df(simulator.get_simulation_start_date(), simulator.get_when_sim_output()))
 
 
-def build_how_many_disp_df():
-    how_many_results = Globals.HOW_MANY_SIM_OUTPUT.value_counts(sort=False).to_frame().reset_index()
+def build_how_many_disp_df(in_how_many_sim_output: pd.DataFrame):
+    how_many_results = in_how_many_sim_output.value_counts(sort=False).to_frame().reset_index()
     how_many_results.columns = ['Count', 'Output']
     # Convert the Count to an index of the df and then drop the 'Count' column
     how_many_results = how_many_results.set_index(how_many_results['Count'])
     return how_many_results.drop(['Count'], axis=1)
 
 
-def build_when_disp_df(in_start_date: datetime):
-    when_results = Globals.WHEN_SIM_OUTPUT.value_counts(sort=False).to_frame().reset_index()
+def build_when_disp_df(in_start_date: datetime, in_when_sim_output: pd.DataFrame):
+    when_results = in_when_sim_output.value_counts(sort=False).to_frame().reset_index()
     when_results.columns = ['End_date', 'Output']
     when_results['End_date'] = when_results['End_date'].apply(lambda duration:
                                                               in_start_date + timedelta(days=duration))

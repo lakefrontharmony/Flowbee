@@ -48,10 +48,6 @@ class ChartBuilderClass:
 			self.completed_items_df = self.build_completed_df(self.clean_df)
 		if self.prep_going_good:
 			self.calc_completed_stats(self.completed_items_df, self.end_date)
-		if self.prep_going_good:
-			Globals.GOOD_FOR_GO = True
-		else:
-			Globals.GOOD_FOR_GO = False
 
 	# This is a check for errors.
 	# Return True if errors were found, False if there were no errors
@@ -68,10 +64,6 @@ class ChartBuilderClass:
 		self.throughput_hist_df = self.build_throughput_histogram_df(self.run_df)
 		self.cycle_time_hist_df = self.build_cycle_time_histogram_df(self.aging_wip_df)
 		self.cycle_time_scatter_df = self.build_cycle_time_scatter_df(self.aging_wip_df)
-		if self.charts_going_good:
-			Globals.CHARTS_BUILT_SUCCESSFULLY = True
-		else:
-			Globals.CHARTS_BUILT_SUCCESSFULLY = False
 
 	def build_errors_were_found(self) -> bool:
 		if self.charts_going_good:
