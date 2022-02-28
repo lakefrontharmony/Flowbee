@@ -179,13 +179,57 @@ def final_sim_stats():
 
 
 # This is the mock return from np.random.default_rng().choice
-# TODO: Make this in to a function that will return a different answer each of the 10 times to verify future calcs
 @pytest.fixture()
 def daily_entries_completed_mocked_list():
 	return [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0,
 			0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
 			0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
 			0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
+
+
+# This is the mock return from np.random.default_rng().choice for the full run_mc_simulation test
+@pytest.fixture()
+def full_daily_entries_completed_mocked_list():
+	return [[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0,  # 1
+			0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+			0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+			0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			[0, 0, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0,  # 2
+			 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			[0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0,  # 3
+			 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 1, 0, 0, 0,  # 4
+			 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			[0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0,  # 5
+			 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			[0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 3, 0, 3, 0, 0, 0, 1, 0, 0, 0,  # 6
+			 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			[0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0,  # 7
+			 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0,  # 8
+			 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0,  # 9
+			 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0,  # 10
+			 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+			 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],]
 
 
 # This is the dataframe after run_monte_carlo_simulations for "how_many" simulation (10 iterations)
@@ -242,12 +286,12 @@ def when_pct_df():
 @pytest.fixture()
 def full_how_many_sim_output():
 	return pd.DataFrame([[12.0],
+						 [15.0],
+						 [13.0],
 						 [12.0],
-						 [12.0],
-						 [12.0],
-						 [12.0],
-						 [12.0],
-						 [12.0],
+						 [14.0],
+						 [17.0],
+						 [13.0],
 						 [12.0],
 						 [12.0],
 						 [12.0]],
@@ -258,15 +302,15 @@ def full_how_many_sim_output():
 @pytest.fixture()
 def full_when_sim_output():
 	return pd.DataFrame([[13.0],
+						 [4.0],
+						 [13.0],
+						 [15.0],
+						 [13.0],
+						 [11.0],
 						 [13.0],
 						 [13.0],
-						 [13.0],
-						 [13.0],
-						 [13.0],
-						 [13.0],
-						 [13.0],
-						 [13.0],
-						 [13.0]],
+						 [33.0],
+						 [33.0]],
 						 columns=['Output'])
 
 
@@ -276,16 +320,16 @@ def full_how_many_pct_df():
 	return pd.DataFrame([[12.0],
 						 [12.0],
 						 [12.0],
-						 [12.0]],
+						 [12.5]],
 						columns=['Count_Percentiles'], index=[0.95, 0.85, 0.7, 0.5])
 
 
 # This is the "when_pct" dataframe for the full run_mc_simulations test (10 iterations)
 @pytest.fixture()
 def full_when_pct_df():
-	return pd.DataFrame([[13.0, '2022-02-01'],
-						 [13.0, '2022-02-01'],
-						 [13.0, '2022-02-01'],
+	return pd.DataFrame([[33.0, '2022-02-21'],
+						 [26.69999999999999, '2022-02-14'],
+						 [13.6, '2022-02-01'],
 						 [13.0, '2022-02-01']],
 						columns=['Days_Percentiles', 'End_Date'], index=[0.95, 0.85, 0.7, 0.5])
 
@@ -298,9 +342,9 @@ def full_final_sim_stats():
 						 ['Number of Days For "How Many" Sim', '84'],
 						 ['Number of Items For "When" Sim', '4'],
 						 ['Max Throughput Per Day:', '3'],
-						 ['Avg # Completed In "How Many" Sim (Rounded)', '12 items'],
+						 ['Avg # Completed In "How Many" Sim (Rounded)', '13 items'],
 						 ['Most Freq. # Completed In "How Many" Sim', '12 items'],
-						 ['Avg Date To Complete Items In "When" Sim (Rounded)', '2022-02-01'],
+						 ['Avg Date To Complete Items In "When" Sim (Rounded)', '2022-02-04'],
 						 ['Most Freq. Date To Complete Items in "When" Sim', '2022-02-01']],
 						columns=['Category', 'Value'])
 
@@ -727,14 +771,14 @@ def test_log_run_stats(input_simulator_builder, when_sim_output, how_many_sim_ou
 
 
 # full run of monte carlo simulations.
-def test_run_mc_simulations(input_simulator_builder, simulator_input_df, daily_entries_completed_mocked_list,
+def test_run_mc_simulations(input_simulator_builder, simulator_input_df, full_daily_entries_completed_mocked_list,
 							full_how_many_sim_output, full_when_sim_output, full_how_many_pct_df, full_when_pct_df,
 							full_final_sim_stats, mocker):
 	# setup
 	num_iterations = 10
 	mocker.patch('SimulationCalcClass.get_input_dataframe', return_value=simulator_input_df)
-	mocker.patch('SimulationCalcClass.SimulationCalcClass.generate_random_daily_completed_list',
-				 return_value=daily_entries_completed_mocked_list)
+	mocked_list = mocker.patch('SimulationCalcClass.SimulationCalcClass.generate_random_daily_completed_list')
+	mocked_list.side_effect = full_daily_entries_completed_mocked_list
 	input_simulator_builder.prep_for_simulation()
 
 	# call function
