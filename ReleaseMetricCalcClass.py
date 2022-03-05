@@ -2,6 +2,7 @@ import pandas as pd
 import json
 from datetime import datetime, date
 
+
 class ReleaseMetricCalcClass:
 
 	def __init__(self):
@@ -9,10 +10,13 @@ class ReleaseMetricCalcClass:
 		self.release_system_col_name = 'System'
 		self.release_date_col_name = 'Release Date'
 		self.on_pipeline_col_name = 'On Pipeline'
+		self.crq_col_name = 'CRQ'
+		self.status_col_name = 'Status'
 		self.json_file = None
 		self.json_dataframe = None
 		self.release_df = None
-		self.summary_df = None
+		self.pipeline_summary_df = None
+		self.release_summary = None
 		self.start_date = date.today()
 		self.end_date = date.today()
 
@@ -28,8 +32,14 @@ class ReleaseMetricCalcClass:
 	def get_release_df(self):
 		return self.release_df   # pragma: no cover
 
-	def get_release_summary_df(self):
-		return self.summary_df   # pragma: no cover
+	def get_pipeline_summary_df(self):
+		return self.pipeline_summary_df   # pragma: no cover
+
+	def get_deployment_summary_df(self):
+		return self.release_summary  # pragma: no cover
+
+	def get_num_of_deployments(self):
+		return len(self.release_summary)  # pragma: no cover
 
 	# ##################################
 	# OPEN FILES
@@ -69,26 +79,28 @@ class ReleaseMetricCalcClass:
 			self.release_df = self.check_df_for_pipelines(self.release_df)  # pragma: no cover
 		else:  # pragma: no cover
 			self.release_df = self.check_df_for_pipelines_between_dates(self.release_df, start_date, end_date)  # pragma: no cover
-		self.summary_df = self.build_summary_df(self.release_df)  # pragma: no cover
+		self.pipeline_summary_df = self.build_pipeline_summary_df(self.release_df)  # pragma: no cover
+		self.release_summary = self.build_release_summary(self.release_df)
 
 	# ##################################
 	# INTERNAL FUNCTIONS
 	# ##################################
-	def strip_release_name_of_version(self, in_release_pd: pd.DataFrame) -> pd.DataFrame:
+	def strip_release_name_of_version(self, in_release_df: pd.DataFrame) -> pd.DataFrame:
 		# use self.release_df and perform str.split to replace name with just the name up to the first space
-		temp_df = in_release_pd.copy()
+		temp_df = in_release_df.copy()
 		new_names = temp_df[self.fix_version_col_name].str.split(pat=' ', n=1, expand=True)
 		temp_df[self.release_system_col_name] = new_names[0]
-		return temp_df[[self.fix_version_col_name, self.release_system_col_name, self.release_date_col_name]]
+		return temp_df[[self.fix_version_col_name, self.release_system_col_name,
+						self.release_date_col_name, self.crq_col_name]]
 
-	def check_df_for_pipelines(self, in_release_pd: pd.DataFrame) -> pd.DataFrame:
-		temp_df = in_release_pd.copy()
+	def check_df_for_pipelines(self, in_release_df: pd.DataFrame) -> pd.DataFrame:
+		temp_df = in_release_df.copy()
 		temp_df[self.on_pipeline_col_name] = temp_df.apply(self.pipeline_entry_exists_for_row, axis=1)
 		return temp_df
 
-	def check_df_for_pipelines_between_dates(self, in_release_pd: pd.DataFrame,
+	def check_df_for_pipelines_between_dates(self, in_release_df: pd.DataFrame,
 											 in_start_date: datetime.date, in_end_date: datetime.date) -> pd.DataFrame:
-		temp_df = in_release_pd.copy()
+		temp_df = in_release_df.copy()
 		date_mask = (temp_df[self.release_date_col_name] >= in_start_date) & \
 					(temp_df[self.release_date_col_name] <= in_end_date)
 		temp_df = temp_df.loc[date_mask]
@@ -108,7 +120,22 @@ class ReleaseMetricCalcClass:
 		else:
 			return 'True'
 
-	def build_summary_df(self, in_pd: pd.DataFrame) -> pd.DataFrame:
-		temp_df = in_pd.copy()
+	def build_pipeline_summary_df(self, in_df: pd.DataFrame) -> pd.DataFrame:
+		temp_df = in_df.copy()
 		pipeline_counts = temp_df.groupby([self.on_pipeline_col_name]).size().reset_index(name='Count')
 		return pipeline_counts
+
+	def build_release_summary(self, in_df: pd.DataFrame) -> pd.DataFrame:
+		release_dates = sorted(in_df['Release Date'].unique())
+		return_df = pd.DataFrame(release_dates, columns=['Release Date'])
+		return_df['Systems'] = return_df['Release Date'].apply(
+			lambda release_date: self.count_entries_on_date(in_df, release_date, self.fix_version_col_name)
+		)
+		return_df['CRQs'] = return_df['Release Date'].apply(
+			lambda release_date: self.count_entries_on_date(in_df, release_date, self.crq_col_name)
+		)
+		return return_df
+
+	def count_entries_on_date(self, in_df: pd.DataFrame, in_date: date, in_col_name: str) -> float:
+		matching_dates_df = in_df.loc[(in_df['Release Date'] == in_date) & (in_df[in_col_name] != '')]
+		return len(matching_dates_df[in_col_name].unique())

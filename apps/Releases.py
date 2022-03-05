@@ -39,9 +39,11 @@ def app():
 	st.subheader('Results')
 	st.write(json_calculator.get_release_df())
 	st.subheader('Summary')
-	st.write(json_calculator.get_release_summary_df())
-
+	st.write(json_calculator.get_pipeline_summary_df())
 	display_pie_chart(json_calculator)
+	st.subheader('Deployment Summary')
+	st.write(f'Number of deployments: {json_calculator.get_num_of_deployments()}')
+	st.write(json_calculator.get_deployment_summary_df())
 
 # =========================================
 # Internal Functions
@@ -62,7 +64,7 @@ def display_example_csv_df():
 
 def display_pie_chart(in_calculator: ReleaseMetricCalcClass):
 
-	summary = in_calculator.get_release_summary_df()
+	summary = in_calculator.get_pipeline_summary_df()
 	cols = summary.columns.tolist()
 	pie_chart = alt.Chart(summary, title='Pipeline 2.0 Distribution').mark_arc().encode(
 		theta='Count:Q',
