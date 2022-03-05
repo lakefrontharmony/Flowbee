@@ -3,6 +3,7 @@ import pandas as pd
 import json
 from datetime import date, timedelta
 from ReleaseMetricCalcClass import ReleaseMetricCalcClass
+import altair as alt
 
 
 def app():
@@ -40,13 +41,14 @@ def app():
 	st.subheader('Summary')
 	st.write(json_calculator.get_release_summary_df())
 
+	display_pie_chart(json_calculator)
 
 # =========================================
 # Internal Functions
 # =========================================
 def display_example_json_df():
 	st.write('Each item in the pipeline must have a "slug" and "statusMessage" (Available = considered active).')
-	json_file = open('Files/pipeline_example.json')
+	json_file = open('Files/UnitTestFiles/pipeline_example.json')
 	display_json = json.load(json_file)
 	st.json(display_json)
 
@@ -56,3 +58,17 @@ def display_example_csv_df():
 							   ['mainframe_release 1.0.0', '2021-12-15'],
 							   ['apigee_release 5.6.1', '2022-01-05']], columns=['Fix Version/s', 'Date'])
 	st.write(example_df)
+
+
+def display_pie_chart(in_calculator: ReleaseMetricCalcClass):
+
+	summary = in_calculator.get_release_summary_df()
+	cols = summary.columns.tolist()
+	pie_chart = alt.Chart(summary, title='Pipeline 2.0 Distribution').mark_arc().encode(
+		theta='Count:Q',
+		radius=alt.Radius('Count', scale=alt.Scale(type='sqrt', zero=True, rangeMin=20)),
+		color='On Pipeline:N',
+		tooltip=cols
+	)
+
+	st.write(pie_chart)
