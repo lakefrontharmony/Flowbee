@@ -175,14 +175,66 @@ def build_cfd_chart(chart_builder: ChartBuilderClass):
 		color=alt.Color('Status:N', legend=alt.Legend(title='Categories')),
 		tooltip=cfd_columns
 	).interactive()
+	# The basic line for real-time labels of the different phases
+	ref_line = cfd_chart.mark_line(interpolate='basis').encode(
+		x='Date:T',
+		y='Count:Q'
+	)
+	# Create a selection that chooses the nearest point & selects based on x-value or y-value
+	nearest_x = alt.selection(type='single', nearest=True, on='mouseover',
+							fields=['Date'], empty='none')
+	nearest_y = alt.selection(type='single', nearest=True, on='mouseover',
+							  fields=['Count'], empty='none')
+	# Transparent selectors across the chart. This is what tells us the x-value or y-value of the cursor
+	selectors_x = cfd_chart.mark_point().encode(
+		x='Date:T',
+		opacity=alt.value(0),
+	).add_selection(
+		nearest_x
+	)
+	selectors_y = cfd_chart.mark_point().encode(
+		y='Count:Q',
+		opacity=alt.value(0),
+	).add_selection(
+		nearest_y
+	)
+	# Draw points on the line, and highlight based on selection
+	points_x = ref_line.mark_point().encode(
+		opacity=alt.condition(nearest_x, alt.value(10), alt.value(0)),
+		color='Status:N'
+	)
+	points_y = ref_line.mark_point().encode(
+		opacity=alt.condition(nearest_y, alt.value(10), alt.value(0)),
+		color='Status:N'
+	)
+	# Draw text labels near the points, and highlight based on selection
+	text_x = ref_line.mark_text(align='left', dx=5, dy=-5, color='black').encode(
+		text=alt.condition(nearest_x, 'Count:Q', alt.value(' '))
+	)
+	text_y = ref_line.mark_text(align='left', dx=5, dy=-5, color='black').encode(
+		text=alt.condition(nearest_y, 'Date:T', alt.value(' '))
+	)
 
+	# Draw a rule at the location of the selection
+	rules_x = cfd_chart.mark_rule(color='gray').encode(
+		x='Date:T',
+	).transform_filter(
+		nearest_x
+	)
+	rules_y = cfd_chart.mark_rule(color='gray').encode(
+		y='Count:Q',
+	).transform_filter(
+		nearest_y
+	)
+	st.altair_chart(cfd_lines + selectors_x + points_x + text_x + rules_x)
+
+	# Build the vectors chart
 	cfd_vectors = alt.Chart(chart_builder.get_cfd_vectors(), title='CFD Status Trajectory').mark_line().encode(
 		x=alt.X('Date:T', title='Date'),
 		y=alt.Y('Count:Q', title='Trajectory'),
 		color=alt.Color('Status:N')
 	).interactive()
-	# stack these two charts vertically, not overlaid
-	st.altair_chart(cfd_lines)
+
 	st.altair_chart(cfd_vectors)
 	# TODO: Enhance CFD Stats
 	# show_cfd_stats = st.checkbox('Show CFD Stats')
