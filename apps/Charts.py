@@ -491,10 +491,11 @@ def build_cycle_time_histogram(chart_builder: ChartBuilderClass):
 def build_cycle_time_scatterplot(chart_builder: ChartBuilderClass):
 	st.header("How do I use this chart?")
 	st.write("""
-			The Cycle Time Scatterplot is a visual representation of cycle time for items that completed on any given day.
-			The red line represents the Cycle Time of 85% of items. 
-			The green line represents the Cycle Time of 50% of items.
-			The black line represents the average Cycle Time of all completed items.\n
+			The Cycle Time Scatterplot is a visual representation of cycle time for items that completed on any given day. \n
+			The RED LINE represents the Cycle Time of 85% of items. 
+			The GREEN LINE represents the Cycle Time of 50% of items.
+			The BLACK LINE represents the average Cycle Time of all completed items.
+			The BLUE LINE represents a rolling 30 day average cycle time to help you see if there are trends over time. \n
 			- Do you see any outliers with long Cycle Time which should be discussed?\n
 			- Do you see any trends or shapes with the delivery of items (ex. an upwards ramp indicates that the Cycle Time
 			is slowly getting longer as you progress through time.)\n
@@ -532,8 +533,22 @@ def build_cycle_time_scatterplot(chart_builder: ChartBuilderClass):
 		alt.Y('CycleTimeAvg:Q'),
 		alt.Text('CycleTimeAvg:Q')
 	)
+	rolling_avg_cycle_time = cycle_scatter_chart.mark_line(color='blue').transform_window(
+		rolling_mean='mean(Age)',
+		frame=[-30, 30],
+		groupby=['CycleTimeAvg']
+	).encode(
+		x='Done_Date:T',
+		y='rolling_mean:Q'
+	)
+	"""rolling_avg_label = cycle_scatter_chart.mark_text(align='left', baseline='bottom', dx=10, color='black', clip=False).encode(
+		alt.X('Done_Date:T', aggregate='max'),
+		alt.Y('CycleTimeAvg:Q'),
+		alt.Text('CycleTimeAvg:Q')
+	)"""
+
 	st.altair_chart(scatter_plot + cycle_time_85_confidence_y + cycle_time_50_confidence_y + cycle_time_average_y
-					+ label_85 + label_50 + label_avg,
+					+ label_85 + label_50 + label_avg + rolling_avg_cycle_time,
 					use_container_width=True)
 
 	# TODO: Enhance Cycle Time Stats
