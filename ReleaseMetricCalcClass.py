@@ -116,9 +116,9 @@ class ReleaseMetricCalcClass:
 		result = self.json_dataframe[(self.json_dataframe['slug'] == in_name) &
 										  (self.json_dataframe['statusMessage'] == 'Available')]
 		if result.empty:
-			return 'False'
+			return 'Not on Pipeline'
 		else:
-			return 'True'
+			return 'On Pipeline'
 
 	def build_pipeline_summary_df(self, in_df: pd.DataFrame) -> pd.DataFrame:
 		temp_df = in_df.copy()

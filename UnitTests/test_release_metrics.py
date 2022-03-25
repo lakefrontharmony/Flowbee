@@ -52,32 +52,32 @@ def tested_release_against_pipeline_file():
 	# Same as the cleaned file, but with a True/False column.
 	# Tests first/last entries, middle active entries, entries on a pipeline which incorrectly missed a space,
 	# entries on pipeline which aren't active, and entries not on pipelines
-	return pd.DataFrame([['pipeline_num_1 1.0.56', 'pipeline_num_1', date(2022, 1, 15), 'CRQ1', 'True'],
-						 ['pipeline_num_2 5.2.0', 'pipeline_num_2', date(2022, 1, 1), 'CRQ2', 'True'],
-						 ['pipeline_num_3 24.9.4', 'pipeline_num_3', date(2021, 12, 20), 'CRQ3', 'False'],
-						 ['pipeline_35.1', 'pipeline_35.1', date(2022, 1, 5), '', 'False'],
-						 ['pipeline_num_18  3.19 6', 'pipeline_num_18', date(2021, 11, 20), 'CRQ4', 'False'],
-						 ['', '', date(2021, 11, 20), 'CRQ5', 'False'],
-						 ['pipeline_num_6  1.23 6', 'pipeline_num_6', date(2022, 1, 2), 'CRQ6', 'True'],
-						 ['pipeline_num_7 1.2.3', 'pipeline_num_7', date(2021, 12, 31), '', 'False']],
+	return pd.DataFrame([['pipeline_num_1 1.0.56', 'pipeline_num_1', date(2022, 1, 15), 'CRQ1', 'On Pipeline'],
+						 ['pipeline_num_2 5.2.0', 'pipeline_num_2', date(2022, 1, 1), 'CRQ2', 'On Pipeline'],
+						 ['pipeline_num_3 24.9.4', 'pipeline_num_3', date(2021, 12, 20), 'CRQ3', 'Not on Pipeline'],
+						 ['pipeline_35.1', 'pipeline_35.1', date(2022, 1, 5), '', 'Not on Pipeline'],
+						 ['pipeline_num_18  3.19 6', 'pipeline_num_18', date(2021, 11, 20), 'CRQ4', 'Not on Pipeline'],
+						 ['', '', date(2021, 11, 20), 'CRQ5', 'Not on Pipeline'],
+						 ['pipeline_num_6  1.23 6', 'pipeline_num_6', date(2022, 1, 2), 'CRQ6', 'On Pipeline'],
+						 ['pipeline_num_7 1.2.3', 'pipeline_num_7', date(2021, 12, 31), '', 'Not on Pipeline']],
 						columns=['Fix Version/s', 'System', 'Release Date', 'CRQ', 'On Pipeline'])
 
 
 @pytest.fixture()
 def releases_between_dec_15_2021_and_jan_15_2022_df():
-	return pd.DataFrame([['pipeline_num_1 1.0.56', 'pipeline_num_1', date(2022, 1, 15), 'CRQ1', 'True'],
-						 ['pipeline_num_2 5.2.0', 'pipeline_num_2', date(2022, 1, 1), 'CRQ2', 'True'],
-						 ['pipeline_num_3 24.9.4', 'pipeline_num_3', date(2021, 12, 20), 'CRQ3', 'False'],
-						 ['pipeline_35.1', 'pipeline_35.1', date(2022, 1, 5), '', 'False'],
-						 ['pipeline_num_6  1.23 6', 'pipeline_num_6', date(2022, 1, 2), 'CRQ6', 'True'],
-						 ['pipeline_num_7 1.2.3', 'pipeline_num_7', date(2021, 12, 31), '', 'False']],
+	return pd.DataFrame([['pipeline_num_1 1.0.56', 'pipeline_num_1', date(2022, 1, 15), 'CRQ1', 'On Pipeline'],
+						 ['pipeline_num_2 5.2.0', 'pipeline_num_2', date(2022, 1, 1), 'CRQ2', 'On Pipeline'],
+						 ['pipeline_num_3 24.9.4', 'pipeline_num_3', date(2021, 12, 20), 'CRQ3', 'Not on Pipeline'],
+						 ['pipeline_35.1', 'pipeline_35.1', date(2022, 1, 5), '', 'Not on Pipeline'],
+						 ['pipeline_num_6  1.23 6', 'pipeline_num_6', date(2022, 1, 2), 'CRQ6', 'On Pipeline'],
+						 ['pipeline_num_7 1.2.3', 'pipeline_num_7', date(2021, 12, 31), '', 'Not on Pipeline']],
 						columns=['Fix Version/s', 'System', 'Release Date','CRQ', 'On Pipeline'])
 
 
 @pytest.fixture()
 def pipeline_count_df():
-	return pd.DataFrame([['False', 5],
-						 ['True', 3]], columns=['On Pipeline', 'Count'])
+	return pd.DataFrame([['Not on Pipeline', 5],
+						 ['On Pipeline', 3]], columns=['On Pipeline', 'Count'])
 
 
 @pytest.fixture()
@@ -113,7 +113,7 @@ def test_matching_pipeline_entry_exists(input_release_calculator):
 	# call function
 	result = input_release_calculator.pipeline_entry_exists_for(known_entry)
 	# set expectation
-	expected = 'True'
+	expected = 'On Pipeline'
 	# assertion
 	assert result == expected
 
@@ -124,7 +124,7 @@ def test_matching_pipeline_entry_exists_but_not_available(input_release_calculat
 	# call function
 	result = input_release_calculator.pipeline_entry_exists_for(known_entry)
 	# set expectation
-	expected = 'False'
+	expected = 'Not on Pipeline'
 	# assertion
 	assert result == expected
 
@@ -135,7 +135,7 @@ def test_matching_pipeline_entry_doesnt_exist(input_release_calculator):
 	# call function
 	result = input_release_calculator.pipeline_entry_exists_for(unknown_entry)
 	# set expectation
-	expected = 'False'
+	expected = 'Not on Pipeline'
 	# assertion
 	assert result == expected
 

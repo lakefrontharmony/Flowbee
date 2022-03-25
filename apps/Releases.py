@@ -44,6 +44,7 @@ def app():
 	st.subheader('Deployment Summary')
 	st.write(f'Number of deployments: {json_calculator.get_num_of_deployments()}')
 	st.write(json_calculator.get_deployment_summary_df())
+	display_deployment_line_chart(json_calculator)
 
 # =========================================
 # Internal Functions
@@ -74,3 +75,19 @@ def display_pie_chart(in_calculator: ReleaseMetricCalcClass):
 	)
 
 	st.write(pie_chart)
+
+
+def display_deployment_line_chart(in_calculator: ReleaseMetricCalcClass):
+	deploy_chart = alt.Chart(in_calculator.get_deployment_summary_df(), title='Deployment Summary')
+	systems_line = deploy_chart.mark_line(color='Red', point=True).encode(
+		x=alt.X('Release Date:T', title='Date'),
+		y=alt.Y('Systems:Q', title='Systems')
+	).interactive()
+
+	crq_line = deploy_chart.mark_line(color='Blue', point=True).encode(
+		x=alt.X('Release Date:T', title='Date'),
+		y=alt.Y('CRQs:Q', title='Systems')
+	).interactive()
+
+	st.write(systems_line + crq_line)
+
