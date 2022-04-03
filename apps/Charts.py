@@ -554,8 +554,8 @@ def build_cycle_time_scatterplot(chart_builder: ChartBuilderClass):
 			 f'you would have a 50/50 chance of getting it done by '
 			 f'{future50Date.strftime("%B %d, %Y")} and a high confidence chance (85%) of getting it done by '
 			 f'{future85Date.strftime("%B %d, %Y")}.')
-	st.write(f'The difference between a flip of a coin chance (50%) and high confidence (85%) is {percentileDiff} days. ')
-	st.write(f'To put this in perspective, {percentileDiff} days ago was {pastPercentileDate.strftime("%B %d, %Y")}. '
+	st.write(f'The difference between a flip of a coin chance (50%) and high confidence (85%) is {percentileDiff} days. '
+			 f'To put this in perspective, {percentileDiff} days ago was {pastPercentileDate.strftime("%B %d, %Y")}. '
 			 f'What were you doing on {pastPercentileDate.strftime("%B %d, %Y")}?')
 	st.subheader('Raw Data')
 	st.write(scatter_df)
