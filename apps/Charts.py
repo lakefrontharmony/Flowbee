@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+from altair import datum
 from datetime import date, timedelta
 import Globals
 from ChartBuilderClass import ChartBuilderClass
@@ -509,47 +510,52 @@ def build_cycle_time_scatterplot(chart_builder: ChartBuilderClass):
 		y=alt.Y('Age:Q', title='Age'),
 		tooltip=scatter_columns
 	).interactive()
-	cycle_time_85_confidence_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='red').encode(
-		y='CycleTime85:Q'
+	cycle_time_percentiles = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2).transform_fold(
+		fold=['CycleTime85', 'CycleTime50', 'CycleTimeAvg'],
+		as_=['percentile', 'value']
+	).encode(
+		y='value:Q',
+		color='percentile:N'
 	)
-	cycle_time_50_confidence_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='green').encode(
-		y='CycleTime50:Q'
-	)
-	cycle_time_average_y = cycle_scatter_chart.mark_rule(strokeDash=[12, 6], size=2, color='black').encode(
-		y='CycleTimeAvg:Q'
-	)
-	label_85 = cycle_scatter_chart.mark_text(align='left', baseline='bottom', dx=10, color='red', clip=False).encode(
+	label_85 = cycle_scatter_chart.mark_text(align='left', baseline='bottom', dx=10, clip=False, size=15).encode(
 		alt.X('Done_Date:T', aggregate='max'),
 		alt.Y('CycleTime85:Q'),
-		alt.Text('CycleTime85:Q')
+		alt.Text('eightFiveLabel:N')
+	).transform_calculate(
+		eightFiveLabel=alt.datum.CycleTime85 + ' days'
 	)
-	label_50 = cycle_scatter_chart.mark_text(align='left', baseline='bottom', dx=10, color='green', clip=False).encode(
+	label_50 = cycle_scatter_chart.mark_text(align='left', baseline='bottom', dx=10, clip=False, size=15).encode(
 		alt.X('Done_Date:T', aggregate='max'),
 		alt.Y('CycleTime50:Q'),
-		alt.Text('CycleTime50:Q')
+		alt.Text('fiftyLabel:N')
+	).transform_calculate(
+		fiftyLabel=alt.datum.CycleTime50 + ' days'
 	)
-	label_avg = cycle_scatter_chart.mark_text(align='left', baseline='bottom', dx=10, color='black', clip=False).encode(
+	label_avg = cycle_scatter_chart.mark_text(align='left', baseline='bottom', dx=10, clip=False, size=15).encode(
 		alt.X('Done_Date:T', aggregate='max'),
 		alt.Y('CycleTimeAvg:Q'),
-		alt.Text('CycleTimeAvg:Q')
+		alt.Text('avgLabel:N')
+	).transform_calculate(
+		avgLabel=alt.datum.CycleTimeAvg + ' days'
 	)
-	rolling_avg_cycle_time = cycle_scatter_chart.mark_line(color='blue').transform_window(
-		rolling_mean='mean(Age)',
-		frame=[-30, 30],
-		groupby=['CycleTimeAvg']
-	).encode(
-		x='Done_Date:T',
-		y='rolling_mean:Q'
-	)
-	"""rolling_avg_label = cycle_scatter_chart.mark_text(align='left', baseline='bottom', dx=10, color='black', clip=False).encode(
-		alt.X('Done_Date:T', aggregate='max'),
-		alt.Y('CycleTimeAvg:Q'),
-		alt.Text('CycleTimeAvg:Q')
-	)"""
 
-	st.altair_chart(scatter_plot + cycle_time_85_confidence_y + cycle_time_50_confidence_y + cycle_time_average_y
-					+ label_85 + label_50 + label_avg + rolling_avg_cycle_time,
-					use_container_width=True)
+	st.altair_chart(scatter_plot + cycle_time_percentiles + label_85 + label_50 + label_avg, use_container_width=True)
 
-	# TODO: Enhance Cycle Time Stats
+	st.subheader('Insights')
+	cycleTime50 = int(round(scatter_df['CycleTime50'].iloc[0], 0))
+	cycleTime85 = int(round(scatter_df['CycleTime85'].iloc[0], 0))
+	percentileDiff = cycleTime85 - cycleTime50
+	future50Date = date.today() + timedelta(days=cycleTime50)
+	future85Date = date.today() + timedelta(days=cycleTime85)
+	pastPercentileDate = date.today() - timedelta(days=percentileDiff)
+	st.write(f'50% of items were completed in {cycleTime50} days. '
+			 f'85%  of items were completed in {cycleTime85} days.')
+	st.write(f'This means, if you started an item today ({date.today().strftime("%B %d, %Y")}), '
+			 f'you would have a 50/50 chance of getting it done by '
+			 f'{future50Date.strftime("%B %d, %Y")} and a high confidence chance (85%) of getting it done by '
+			 f'{future85Date.strftime("%B %d, %Y")}.')
+	st.write(f'The difference between a flip of a coin chance (50%) and high confidence (85%) is {percentileDiff} days. ')
+	st.write(f'To put this in perspective, {percentileDiff} days ago was {pastPercentileDate.strftime("%B %d, %Y")}. '
+			 f'What were you doing on {pastPercentileDate.strftime("%B %d, %Y")}?')
+	st.subheader('Raw Data')
 	st.write(scatter_df)
