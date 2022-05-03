@@ -107,7 +107,7 @@ class ChartBuilderClass:
 
 	def get_cycle_time_scatter_df(self):  # pragma: no cover
 		return_df = self.cycle_time_scatter_df.copy()  # pragma: no cover
-		return_df['Done_Date'] = return_df['Done_Date'].dt.date  # pragma: no cover
+		# return_df['Done_Date'] = return_df['Done_Date'].dt.date  # pragma: no cover
 		return return_df  # pragma: no cover
 
 	def get_errors(self):  # pragma: no cover
