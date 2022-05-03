@@ -55,15 +55,12 @@ class FlowCalcClass:
 
 	def run_flow_metrics(self):
 		avg_lead_time = self.calculate_average_lead_time(self.clean_df, self.number_of_finished_items)
+		pct_lead_time = self.calculate_quantile_lead_time(self.clean_df, 0.85)
 		avg_throughput = self.calculate_average_throughput(self.number_of_finished_items, self.number_of_days)
 		avg_wip = self.calculate_average_wip(self.dates_df, self.clean_df, self.wip_df)
 		wip_violations = self.calculate_wip_violations(self.dates_df)
-		flow_data = [[Globals.FLOW_METRIC_LEAD_TIME_KEY, avg_lead_time],
-					 [Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY, avg_throughput],
-					 [Globals.FLOW_METRIC_AVG_WIP_KEY, avg_wip],
-					 [Globals.FLOW_METRIC_WIP_VIOLATIONS_KEY, wip_violations],
-					 [Globals.FLOW_METRIC_WIP_VIOLATIONS_PCT_KEY,f'{round((wip_violations/self.number_of_days)*100, 2)}%']]
-		self.flow_metric_results = pd.DataFrame(flow_data, columns=['Category', 'Value'])
+		self.flow_metric_results = self.build_flow_results(avg_lead_time, pct_lead_time, avg_throughput,
+														   avg_wip, wip_violations)
 
 		if self.calcs_going_good & self.category_calc_toggle:
 			self.flow_metric_category_results = self.calculate_category_metrics(self.flow_metric_categories,
@@ -143,11 +140,13 @@ class FlowCalcClass:
 		end_bool_series = return_df[self.end_col].ne('')
 		return_df = return_df.loc[end_bool_series]
 
-		start_bool_series = pd.notnull(return_df[self.start_col])
-		return_df = return_df[start_bool_series]
+		# start_bool_series = pd.notnull(return_df[self.start_col])
+		# return_df = return_df[start_bool_series]
 
-		start_bool_series = return_df[self.start_col].ne('')
-		return_df = return_df.loc[start_bool_series]
+		# start_bool_series = return_df[self.start_col].ne('')
+		# return_df = return_df.loc[start_bool_series]
+
+		return_df = self.fillna_dates(return_df)
 
 		if return_df is None:
 			self.prep_going_good = False
@@ -259,6 +258,12 @@ class FlowCalcClass:
 		self.calcs_going_good = True
 		return round(clean_df['lead_time'].sum() / number_of_finished_items, 2)
 
+	def calculate_quantile_lead_time(self, clean_df: pd.DataFrame, in_percentile: float) -> np.float64:
+		lead_time_series = clean_df[self.end_col] - clean_df[self.start_col]
+		lead_time_series = lead_time_series / np.timedelta64(1, 'D')
+		# throughput_count = lead_time_series.value_counts()
+		return round(lead_time_series.quantile(in_percentile), 2)
+
 	# Calculate the average number of items completed per week
 	# Count how many items finished, divide by number of days in period, then multiply by 7 (days)
 	def calculate_average_throughput(self, num_finished_items, num_days) -> np.float64:
@@ -332,6 +337,10 @@ class FlowCalcClass:
 	# =========================================
 	# INTERNAL FUNCTIONS
 	# =========================================
+	def fillna_dates(self, in_df: pd.DataFrame) -> pd.DataFrame:
+		temp_df = in_df.fillna(axis=1, method='bfill')
+		return temp_df
+
 	def calc_wip_on_date(self, row, clean_df, wip_df, calculate_categories=False):
 		found_completed_rows = (clean_df[self.start_col] <= row['Date']) & (clean_df[self.end_col] > row['Date'])
 		temp_df = clean_df.loc[found_completed_rows]
@@ -350,6 +359,16 @@ class FlowCalcClass:
 		avg_throughput = round((category_count / number_of_days) * 7, 2)
 		return_array = np.array([category, category_count, avg_lead_time, avg_throughput])
 		return return_array
+
+	def build_flow_results(self, avg_lead_time, pct_lead_time, avg_throughput, avg_wip, wip_violations):
+		flow_data = [[Globals.FLOW_METRIC_LEAD_TIME_KEY, f'{avg_lead_time} day(s)'],
+					 [Globals.FLOW_METRIC_PERCENT_LEAD_TIME_KEY, f'{pct_lead_time} day(s)'],
+					 [Globals.FLOW_METRIC_WEEKLY_THROUGHPUT_KEY, f'{avg_throughput} item(s)'],
+					 [Globals.FLOW_METRIC_AVG_WIP_KEY, f'{avg_wip} item(s) per day'],
+					 [Globals.FLOW_METRIC_WIP_VIOLATIONS_KEY, f'{wip_violations} day(s)'],
+					 [Globals.FLOW_METRIC_WIP_VIOLATIONS_PCT_KEY,
+					  f'{round((wip_violations / self.number_of_days) * 100, 2)}%']]
+		return pd.DataFrame(flow_data, columns=['Category', 'Value'])
 
 
 def get_sprint_dataframe() -> pd.DataFrame:

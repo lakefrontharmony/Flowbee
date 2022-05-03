@@ -81,16 +81,28 @@ def flow_metric_stats_df():
 	return pd.DataFrame([['Start Date', '2022-01-03'],
 						 ['End Date', '2022-01-30'],
 						 ['Days', 28],
-						 ['Completed Items', 2],
+						 ['Completed Items', 3],
 						 ['Still In Progress', 3]],
 						columns=['Category', 'Value'])
 
 
 # This is the dataframe that represents a range of 2022-01-01 to 2022-01-05 with WIP for each date filled in.
 @pytest.fixture()
+def flow_metric_results_df():
+	return pd.DataFrame([['Avg Lead Time', '115.0 day(s)'],
+						 ['85th Pct Lead Time', '1 day(s)'],
+						 ['Weekly Throughput', '0.75 item(s)'],
+						 ['Average Daily WIP', '1.32 item(s) per day'],
+						 ['Days of WIP Violations', '0 day(s)'],
+						 ['% of Days Violating WIP Limit', '0.0%']],
+						columns=['Category', 'Value'])
+
+
+# This is the dataframe that represents a range of 2022-01-01 to 2022-01-05 with WIP for each date filled in.
+@pytest.fixture()
 def category_metrics_df():
-	return pd.DataFrame([['Strategic', 1, 249.0, 0.25, 50.0],
-						 ['Enabler', 1, 96.0, 0.25, 50.0]],
+	return pd.DataFrame([['Strategic', 2, 124.5, 0.5, 66.67],
+						 ['Enabler', 1, 96.0, 0.25, 33.33]],
 						columns=['Category', 'Count', 'Avg Lead Time', 'Weekly Throughput', 'Work Mix %'])
 
 
@@ -321,7 +333,18 @@ def test_calculate_average_lead_time(input_flow_calculator, flow_clean_df):
 	# call function
 	result = input_flow_calculator.calculate_average_lead_time(flow_clean_df, num_of_finished_items)
 	# set expectation
-	expected = 172.5
+	expected = 115.0
+	# assertion
+	assert result == expected
+
+
+def test_calculate_quantile_lead_time(input_flow_calculator, flow_clean_df):
+	# setup
+	in_percentile = 0.85
+	# call function
+	result = input_flow_calculator.calculate_quantile_lead_time(flow_clean_df, in_percentile)
+	# set expectation
+	expected = 1.0
 	# assertion
 	assert result == expected
 
@@ -337,7 +360,7 @@ def test_calculate_category_metrics(input_flow_calculator, flow_clean_df, catego
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
-def test_run_flow_metrics(input_flow_calculator, sprint_df, flow_input_df, mocker):
+def test_run_flow_metrics(input_flow_calculator, sprint_df, flow_input_df, flow_metric_results_df, mocker):
 	# setup
 	test_calculator = input_flow_calculator
 	mocker.patch('FlowCalcClass.get_sprint_dataframe', return_value=sprint_df)
@@ -346,10 +369,13 @@ def test_run_flow_metrics(input_flow_calculator, sprint_df, flow_input_df, mocke
 	test_calculator.run_flow_metrics()
 	# call function
 	result = test_calculator.calc_errors_were_found()
+	result_df = test_calculator.get_flow_metric_results()
 	# set expectation
 	expected = False
+	expected_result_df = flow_metric_results_df
 	# assertion
 	assert result == expected
+	assert pd.testing.assert_frame_equal(result_df, expected_result_df) is None
 
 
 """

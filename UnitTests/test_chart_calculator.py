@@ -23,7 +23,8 @@ def chart_input_df():
 						 ['C4', 'TestC4', 'Parent3', '', '', '', '', 'Strategic'],
 						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler'],
 						 ['Z6', 'TestZ6', 'Parent4', '2021-11-02', '2021-12-02', '2022-02-10', '', 'Maintenance'],
-						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-03', '', '', 'Strategic']],
+						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-03', '', '', 'Strategic'],
+						 ['Z8', 'TestZ8', 'Parent4', '2022-01-01', '', '2022-01-03', '', 'Strategic']],
 						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
 
 
@@ -36,7 +37,8 @@ def chart_no_cancelled_df():
 						 ['C4', 'TestC4', 'Parent3', '', '', '', '', 'Strategic'],
 						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler'],
 						 ['Z6', 'TestZ6', 'Parent4', '2021-11-02', '2021-12-02', '2022-02-10', '', 'Maintenance'],
-						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-03', '', '', 'Strategic']],
+						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-03', '', '', 'Strategic'],
+						 ['Z8', 'TestZ8', 'Parent4', '2022-01-01', '', '2022-01-03', '', 'Strategic']],
 						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
 
 
@@ -48,7 +50,8 @@ def chart_clean_df():
 						 ['TestC3', date(2021, 5, 1), date(2022, 1, 5), 4],
 						 ['TestZ5',date(2021, 10, 6), date(2022, 1, 10), 4],
 						 ['TestZ6', date(2021, 12, 2), date(2022, 2, 10), 4],
-						 ['TestZ7',date(2022, 1, 3), pd.NaT, 4]],
+						 ['TestZ7',date(2022, 1, 3), pd.NaT, 4],
+						 ['TestZ8', date(2022, 1, 3), date(2022, 1, 3), 4]],
 						 columns=['Name', '1_InProgress', '2_Done', 'WIPLimit'])
 
 

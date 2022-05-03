@@ -20,7 +20,8 @@ def flow_input_df():
 						 ['C3', 'TestC3', 'Parent3', '2021-01-01', '2021-05-01', '2022-01-05', '', 'Strategic'],
 						 ['C4', 'TestC4', 'Parent3', '', '', '', '', 'Strategic'],
 						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler'],
-						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-03', '', '', 'Strategic']],
+						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-03', '', '', 'Strategic'],
+						 ['Z8', 'TestZ8', 'Parent4', '', '', '2022-01-05', '', 'Strategic']],
 						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
 
 
@@ -32,7 +33,8 @@ def flow_no_cancelled_df():
 						 ['C3', 'TestC3', 'Parent3', '2021-01-01', '2021-05-01', '2022-01-05', '', 'Strategic'],
 						 ['C4', 'TestC4', 'Parent3', '', '', '', '', 'Strategic'],
 						 ['Z5', 'TestZ5', 'Parent4', '2021-08-08', '2021-10-06', '2022-01-10', '', 'Enabler'],
-						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-03', '', '', 'Strategic']],
+						 ['Z7', 'TestZ7', 'Parent4', '2022-01-01', '2022-01-03', '', '', 'Strategic'],
+						 ['Z8', 'TestZ8', 'Parent4', '', '', '2022-01-05', '', 'Strategic']],
 						 columns=['ID', 'Name', 'Parent', 'Ready', 'InProgress', 'Done', 'Cancelled', 'Type'])
 
 
@@ -40,7 +42,8 @@ def flow_no_cancelled_df():
 @pytest.fixture()
 def flow_clean_df():
 	return pd.DataFrame([[datetime(2021, 5, 1), datetime(2022, 1, 5), 'Strategic', 249.0],
-						 [datetime(2021, 10, 6), datetime(2022, 1, 10), 'Enabler', 96.0]],
+						 [datetime(2021, 10, 6), datetime(2022, 1, 10), 'Enabler', 96.0],
+						 [datetime(2022, 1, 5), datetime(2022, 1, 5), 'Strategic', 0]],
 						 columns=['InProgress', 'Done', 'Type', 'lead_time'])
 
 
