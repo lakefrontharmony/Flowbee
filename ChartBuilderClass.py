@@ -146,13 +146,13 @@ class ChartBuilderClass:
 
 		# Added "or" condition to include scenarios where something was bypassed on the start column
 		# (will be backfilled later)
-		start_bool_series = pd.notnull(return_df[self.start_col]) or pd.notnull(return_df[self.end_col])
+		start_bool_series = (pd.notnull(return_df[self.start_col]) | pd.notnull(return_df[self.end_col]))
 		return_df = return_df.loc[start_bool_series]
 		# Since the date columns have not been converted to dates yet, it was not seeing an empty string as null.
 		# Added this statement in to get rid of things that have not yet reached the start column.
 		# Added "or" condition to include scenarios where something was bypassed on the start column
 		# (will be backfilled later)
-		start_bool_series = return_df[self.start_col].ne('') or return_df[self.end_col].ne('')
+		start_bool_series = (return_df[self.start_col].ne('') | return_df[self.end_col].ne(''))
 		return_df = return_df.loc[start_bool_series]
 
 		if return_df is None:
