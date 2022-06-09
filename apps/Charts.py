@@ -488,15 +488,15 @@ def build_cycle_time_histogram(chart_builder: ChartBuilderClass):
 	# TODO: Enhance Cycle Time Histogram Stats
 	st.write(chart_builder.get_cycle_time_hist_df())
 
-
+# WIP
 def build_cycle_time_scatterplot(chart_builder: ChartBuilderClass):
 	st.header("How do I use this chart?")
 	st.write("""
 			The Cycle Time Scatterplot is a visual representation of cycle time for items that completed on any given day. \n
-			The RED LINE represents the Cycle Time of 85% of items. 
-			The GREEN LINE represents the Cycle Time of 50% of items.
-			The BLACK LINE represents the average Cycle Time of all completed items.
-			The BLUE LINE represents a rolling 30 day average cycle time to help you see if there are trends over time. \n
+			The Orange LINE represents the Cycle Time of 85% of items. 
+			The Blue LINE represents the Cycle Time of 50% of items.
+			The Red LINE represents the average Cycle Time of all completed items.
+			The Black LINE represents a rolling 30 day average cycle time to help see if there are trends over time. \n
 			- Do you see any outliers with long Cycle Time which should be discussed?\n
 			- Do you see any trends or shapes with the delivery of items (ex. an upwards ramp indicates that the Cycle Time
 			is slowly getting longer as you progress through time.)\n
@@ -539,7 +539,17 @@ def build_cycle_time_scatterplot(chart_builder: ChartBuilderClass):
 		avgLabel=alt.datum.CycleTimeAvg + ' days'
 	)
 
-	st.altair_chart(scatter_plot + cycle_time_percentiles + label_85 + label_50 + label_avg, use_container_width=True)
+	rolling_avg = cycle_scatter_chart.mark_line(color='black').transform_window(
+		rolling_mean='mean(Age)',
+		frame=[-30, 0],
+		groupby=['CycleTimeAvg']
+	).encode(
+		x='Done_Date:T',
+		y='rolling_mean:Q'
+	)
+
+	st.altair_chart(scatter_plot + cycle_time_percentiles + label_85 + label_50 + label_avg + rolling_avg,
+					use_container_width=True)
 
 	st.subheader('Insights')
 	cycleTime50 = int(round(scatter_df['CycleTime50'].iloc[0], 0))
