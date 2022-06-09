@@ -406,7 +406,17 @@ def build_throughput_run_chart(chart_builder: ChartBuilderClass):
 		y='Throughput:Q',
 		tooltip=['Date', 'Throughput']
 	).interactive()
-	st.altair_chart(throughput_line)
+
+	rolling_avg = throughput_run_chart.mark_line(color='black').transform_window(
+		rolling_mean='mean(Throughput)',
+		frame=[-30, 0],
+		groupby=['WIPLimit']
+	).encode(
+		x='Date:T',
+		y='rolling_mean:Q'
+	)
+
+	st.altair_chart(throughput_line + rolling_avg)
 
 
 def build_monthly_velocity_chart(chart_builder: ChartBuilderClass):
