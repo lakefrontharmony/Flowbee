@@ -15,6 +15,7 @@ def app():
 	release_form.subheader('Fill out dates and submit to limit the results:')
 	start_date = release_form.date_input('Start Date', value=date.today() - timedelta(days=90))
 	end_date = release_form.date_input('End Date', value=date.today())
+	# TODO: Add a dropdown to select the column for pipeline override (Y/N field for if the release was on a pipeline)
 	submit_button = release_form.form_submit_button(label='Submit')
 
 	if pipeline_info_file is None:
@@ -32,6 +33,7 @@ def app():
 	json_calculator = ReleaseMetricCalcClass()
 	json_calculator.prepare_for_metrics(pipeline_info_file, release_info_file)
 	if submit_button:
+		# TODO: Add in the pipeline override column name and build functionality to default that to a pipeline release.
 		json_calculator.run_release_metrics(start_date, end_date)
 	else:
 		json_calculator.run_release_metrics()
