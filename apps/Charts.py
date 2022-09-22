@@ -266,6 +266,7 @@ def build_aging_wip(chart_builder: ChartBuilderClass):
 	aging_df = aging_df.loc[in_progress_mask]
 	aging_df.reset_index(drop=True, inplace=True)
 	aging_columns = aging_df.columns.tolist()
+	aging_columns.remove('Done_Date')
 
 	cycle_time_85_confidence = int(aging_df.loc[0, 'CycleTime85'])
 	cycle_time_50_confidence = int(aging_df.loc[0, 'CycleTime50'])
