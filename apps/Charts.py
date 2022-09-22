@@ -261,6 +261,10 @@ def build_aging_wip(chart_builder: ChartBuilderClass):
 			Hover over any dot on the chart to see more details of where the time has been spent for each item.
 			""")
 	aging_df = chart_builder.get_aging_wip_df()
+	# remove done items
+	in_progress_mask = (aging_df['Status'] != chart_builder.get_end_column_name())
+	aging_df = aging_df.loc[in_progress_mask]
+	aging_df.reset_index(drop=True, inplace=True)
 	aging_columns = aging_df.columns.tolist()
 
 	cycle_time_85_confidence = int(aging_df.loc[0, 'CycleTime85'])

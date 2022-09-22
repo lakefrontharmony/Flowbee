@@ -89,14 +89,15 @@ class ChartBuilderClass:
 	def get_date_column_list(self):  # pragma: no cover
 		return self.date_col_names  # pragma: no cover
 
+	def get_end_column_name(self):  # pragma: no cover
+		return self.end_col  # pragma: no cover
+
 	def get_aging_wip_df(self):  # pragma: no cover
 		return_df = self.aging_wip_df.copy()  # pragma: no cover
-		# return_df['Done_Date'] = return_df['Done_Date'].dt.date  # pragma: no cover
 		return return_df  # pragma: no cover
 
 	def get_run_df(self):  # pragma: no cover
 		return_df = self.run_df.copy()  # pragma: no cover
-		# return_df['Date'] = return_df['Date'].dt.date  # pragma: no cover
 		return return_df  # pragma: no cover
 
 	def get_throughput_hist_df(self):  # pragma: no cover
@@ -107,7 +108,6 @@ class ChartBuilderClass:
 
 	def get_cycle_time_scatter_df(self):  # pragma: no cover
 		return_df = self.cycle_time_scatter_df.copy()  # pragma: no cover
-		# return_df['Done_Date'] = return_df['Done_Date'].dt.date  # pragma: no cover
 		return return_df  # pragma: no cover
 
 	def get_errors(self):  # pragma: no cover
