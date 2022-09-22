@@ -90,7 +90,7 @@ def flow_metric_stats_df():
 @pytest.fixture()
 def flow_metric_results_df():
 	return pd.DataFrame([['Avg Lead Time', '115.0 day(s)'],
-						 ['85th Pct Lead Time', '1 day(s)'],
+						 ['85th Pct Lead Time', '226.05 day(s)'],
 						 ['Weekly Throughput', '0.75 item(s)'],
 						 ['Average Daily WIP', '1.32 item(s) per day'],
 						 ['Days of WIP Violations', '0 day(s)'],
@@ -344,7 +344,7 @@ def test_calculate_quantile_lead_time(input_flow_calculator, flow_clean_df):
 	# call function
 	result = input_flow_calculator.calculate_quantile_lead_time(flow_clean_df, in_percentile)
 	# set expectation
-	expected = 1.0
+	expected = 203.1
 	# assertion
 	assert result == expected
 

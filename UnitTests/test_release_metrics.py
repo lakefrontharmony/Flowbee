@@ -20,6 +20,19 @@ def input_release_calculator(input_json_pipeline_file):
 
 
 @pytest.fixture()
+def test_release_unformatted_in_file():
+	return pd.DataFrame([['pipeline_num_1 1.0.56', '2022-01-15', 'CRQ1', 'Released'],
+						 ['pipeline_num_2 5.2.0', '2022-01-1', 'CRQ2', 'Released'],
+						 ['pipeline_num_3 24.9.4', '2021-12-20', 'CRQ3', 'Released'],
+						 ['pipeline_35.1', '2022-01-05', '', 'Unreleased'],
+						 ['pipeline_num_18  3.19 6', '2021-11-20', 'CRQ4', 'Released'],
+						 ['', '2021-11-20', 'CRQ5', 'Unreleased'],
+						 ['pipeline_num_6  1.23 6', '2022-01-02', 'CRQ6', 'Released'],
+						 ['pipeline_num_7 1.2.3', '2021-12-31', '', 'Released']],
+						columns=['Fix Version/s', 'Release Date', 'CRQ', 'Status'])
+
+
+@pytest.fixture()
 def test_release_in_file():
 	return pd.DataFrame([['pipeline_num_1 1.0.56', date(2022, 1, 15), 'CRQ1', 'Released'],
 						 ['pipeline_num_2 5.2.0', date(2022, 1, 1), 'CRQ2', 'Released'],
@@ -30,6 +43,19 @@ def test_release_in_file():
 						 ['pipeline_num_6  1.23 6', date(2022, 1, 2), 'CRQ6', 'Released'],
 						 ['pipeline_num_7 1.2.3', date(2021, 12, 31), '', 'Released']],
 						columns=['Fix Version/s', 'Release Date', 'CRQ', 'Status'])
+
+
+@pytest.fixture()
+def test_release_in_file_with_overrides():
+	return pd.DataFrame([['pipeline_num_1 1.0.56', date(2022, 1, 15), 'CRQ1', '', 'Released'],
+						 ['pipeline_num_2 5.2.0', date(2022, 1, 1), 'CRQ2', '', 'Released'],
+						 ['pipeline_num_3 24.9.4', date(2021, 12, 20), 'CRQ3', '', 'Released'],
+						 ['pipeline_35.1', date(2022, 1, 5), '', '', 'Unreleased'],
+						 ['pipeline_num_18  3.19 6', date(2021, 11, 20), 'CRQ4', '', 'Released'],
+						 ['', date(2021, 11, 20), 'CRQ5', '', 'Unreleased'],
+						 ['pipeline_num_6  1.23 6', date(2022, 1, 2), 'CRQ6', 'Y', 'Released'],
+						 ['pipeline_num_7 1.2.3', date(2021, 12, 31), '', 'Y', 'Released']],
+						columns=['Fix Version/s', 'Release Date', 'CRQ', 'Pipeline Override', 'Status'])
 
 
 @pytest.fixture()
@@ -48,6 +74,21 @@ def test_release_cleaned_file():
 
 
 @pytest.fixture()
+def test_release_cleaned_file_with_overrides():
+	# Tests for expected formatting, and when there is accidentally no space (test_3: returns full name),
+	# and when there is two spaces (test_4: still returns only up to first space)
+	return pd.DataFrame([['pipeline_num_1 1.0.56', 'pipeline_num_1', date(2022, 1, 15), 'CRQ1', ''],
+						 ['pipeline_num_2 5.2.0', 'pipeline_num_2', date(2022, 1, 1), 'CRQ2', ''],
+						 ['pipeline_num_3 24.9.4', 'pipeline_num_3', date(2021, 12, 20), 'CRQ3', ''],
+						 ['pipeline_35.1', 'pipeline_35.1', date(2022, 1, 5), '', ''],
+						 ['pipeline_num_18  3.19 6', 'pipeline_num_18', date(2021, 11, 20), 'CRQ4', ''],
+						 ['', '', date(2021, 11, 20), 'CRQ5', ''],
+						 ['pipeline_num_6  1.23 6', 'pipeline_num_6', date(2022, 1, 2), 'CRQ6', 'Y'],
+						 ['pipeline_num_7 1.2.3', 'pipeline_num_7', date(2021, 12, 31), '', 'Y']],
+						columns=['Fix Version/s', 'System', 'Release Date', 'CRQ', 'Pipeline Override'])
+
+
+@pytest.fixture()
 def tested_release_against_pipeline_file():
 	# Same as the cleaned file, but with a True/False column.
 	# Tests first/last entries, middle active entries, entries on a pipeline which incorrectly missed a space,
@@ -61,6 +102,22 @@ def tested_release_against_pipeline_file():
 						 ['pipeline_num_6  1.23 6', 'pipeline_num_6', date(2022, 1, 2), 'CRQ6', 'On Pipeline'],
 						 ['pipeline_num_7 1.2.3', 'pipeline_num_7', date(2021, 12, 31), '', 'Not on Pipeline']],
 						columns=['Fix Version/s', 'System', 'Release Date', 'CRQ', 'On Pipeline'])
+
+
+@pytest.fixture()
+def tested_release_against_pipeline_file_with_overrides():
+	# Same as the cleaned file, but with a True/False column.
+	# Tests first/last entries, middle active entries, entries on a pipeline which incorrectly missed a space,
+	# entries on pipeline which aren't active, and entries not on pipelines
+	return pd.DataFrame([['pipeline_num_1 1.0.56', 'pipeline_num_1', date(2022, 1, 15), 'CRQ1', '', 'On Pipeline'],
+						 ['pipeline_num_2 5.2.0', 'pipeline_num_2', date(2022, 1, 1), 'CRQ2', '', 'On Pipeline'],
+						 ['pipeline_num_3 24.9.4', 'pipeline_num_3', date(2021, 12, 20), 'CRQ3', '', 'Not on Pipeline'],
+						 ['pipeline_35.1', 'pipeline_35.1', date(2022, 1, 5), '', '', 'Not on Pipeline'],
+						 ['pipeline_num_18  3.19 6', 'pipeline_num_18', date(2021, 11, 20), 'CRQ4', '', 'Not on Pipeline'],
+						 ['', '', date(2021, 11, 20), 'CRQ5', '', 'Not on Pipeline'],
+						 ['pipeline_num_6  1.23 6', 'pipeline_num_6', date(2022, 1, 2), 'CRQ6', 'Y', 'On Pipeline'],
+						 ['pipeline_num_7 1.2.3', 'pipeline_num_7', date(2021, 12, 31), '', 'Y', 'On Pipeline']],
+						columns=['Fix Version/s', 'System', 'Release Date', 'CRQ','Pipeline Override', 'On Pipeline'])
 
 
 @pytest.fixture()
@@ -107,6 +164,18 @@ def test_open_and_create_release_dataframe(input_release_calculator, test_releas
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
 
+def test_formatting_release_dataframe(input_release_calculator,test_release_unformatted_in_file, test_release_in_file):
+	# setup
+	in_file = pd.DataFrame()
+	# call function
+	input_release_calculator.format_releases_csv_file(test_release_unformatted_in_file)
+	result = input_release_calculator.get_release_df()
+	# set expectation
+	expected = test_release_in_file
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
 def test_matching_pipeline_entry_exists(input_release_calculator):
 	# setup
 	known_entry = 'pipeline_num_2'
@@ -140,12 +209,26 @@ def test_matching_pipeline_entry_doesnt_exist(input_release_calculator):
 	assert result == expected
 
 
-def test_stripping_fix_version_of_release_numbers(input_release_calculator, test_release_in_file, test_release_cleaned_file):
+def test_stripping_fix_version_of_release_numbers(input_release_calculator, test_release_in_file,
+												  test_release_cleaned_file):
 	# setup
 	# call function
 	result = input_release_calculator.strip_release_name_of_version(test_release_in_file)
 	# set expectation
 	expected = test_release_cleaned_file
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+def test_stripping_fix_version_of_release_numbers_with_overrides(input_release_calculator, test_release_in_file_with_overrides,
+												  test_release_cleaned_file_with_overrides):
+	# setup
+	input_release_calculator.overrides_exist = True
+	input_release_calculator.override_column_name = 'Pipeline Override'
+	# call function
+	result = input_release_calculator.strip_release_name_of_version(test_release_in_file_with_overrides)
+	# set expectation
+	expected = test_release_cleaned_file_with_overrides
 	# assertion
 	assert pd.testing.assert_frame_equal(result, expected) is None
 
@@ -157,6 +240,20 @@ def test_comparing_release_df_to_pipelines(input_release_calculator, test_releas
 	result = input_release_calculator.check_df_for_pipelines(test_release_cleaned_file)
 	# set expectation
 	expected = tested_release_against_pipeline_file
+	# assertion
+	assert pd.testing.assert_frame_equal(result, expected) is None
+
+
+def test_comparing_release_df_to_pipelines_with_overrides(input_release_calculator,
+														  test_release_cleaned_file_with_overrides,
+														  tested_release_against_pipeline_file_with_overrides):
+	# setup
+	input_release_calculator.overrides_exist = True
+	input_release_calculator.override_column_name = 'Pipeline Override'
+	# call function
+	result = input_release_calculator.check_df_for_pipelines(test_release_cleaned_file_with_overrides)
+	# set expectation
+	expected = tested_release_against_pipeline_file_with_overrides
 	# assertion
 	assert pd.testing.assert_frame_equal(result, expected) is None
 

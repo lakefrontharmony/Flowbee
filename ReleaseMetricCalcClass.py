@@ -19,6 +19,8 @@ class ReleaseMetricCalcClass:
 		self.release_summary = None
 		self.start_date = date.today()
 		self.end_date = date.today()
+		self.overrides_exist = False
+		self.override_column_name = ''
 
 	# ##################################
 	# GETTERS
@@ -64,13 +66,29 @@ class ReleaseMetricCalcClass:
 			# error if this column does not exist
 			pass
 
+	def format_releases_csv_file(self, in_csv):
+		self.release_df = in_csv
+		if self.fix_version_col_name not in self.release_df:
+			# error if this column does not exist
+			pass
+		if self.release_date_col_name in self.release_df:
+			self.release_df[self.release_date_col_name] = \
+				pd.to_datetime(self.release_df[self.release_date_col_name]).dt.date
+		else:
+			# error if this column does not exist
+			pass
+
 	# ##################################
 	# EXTERNAL FUNCTIONS
 	# ##################################
 	# excluding this Function from code coverage because all it does is call other internal functions which are included.
-	def prepare_for_metrics(self, in_pipeline_file, in_releases_file):
+	def prepare_for_metrics(self, in_pipeline_file, in_releases_file, in_override_column_name):
 		self.read_json_file(in_pipeline_file)  # pragma: no cover
-		self.read_releases_csv_file(in_releases_file)  # pragma: no cover
+		# self.read_releases_csv_file(in_releases_file)  # pragma: no cover
+		self.format_releases_csv_file(in_releases_file) # pragma: no cover
+		if in_override_column_name != 'No': # pragma: no cover
+			self.overrides_exist = True # pragma: no cover
+			self.override_column_name = in_override_column_name # pragma: no cover
 		self.release_df = self.strip_release_name_of_version(self.release_df)  # pragma: no cover
 
 	# excluding this Function from code coverage because all it does is call other internal functions which are included.
@@ -90,8 +108,12 @@ class ReleaseMetricCalcClass:
 		temp_df = in_release_df.copy()
 		new_names = temp_df[self.fix_version_col_name].str.split(pat=' ', n=1, expand=True)
 		temp_df[self.release_system_col_name] = new_names[0]
-		return temp_df[[self.fix_version_col_name, self.release_system_col_name,
-						self.release_date_col_name, self.crq_col_name]]
+		if self.overrides_exist:
+			return temp_df[[self.fix_version_col_name, self.release_system_col_name,
+							self.release_date_col_name, self.crq_col_name, self.override_column_name]]
+		else:
+			return temp_df[[self.fix_version_col_name, self.release_system_col_name,
+							self.release_date_col_name, self.crq_col_name]]
 
 	def check_df_for_pipelines(self, in_release_df: pd.DataFrame) -> pd.DataFrame:
 		temp_df = in_release_df.copy()
@@ -109,6 +131,10 @@ class ReleaseMetricCalcClass:
 		return temp_df
 
 	def pipeline_entry_exists_for_row(self, in_row):
+		if self.overrides_exist:
+			if in_row[self.override_column_name] == 'Y':
+				return 'On Pipeline'
+
 		entry = in_row[self.release_system_col_name]
 		return self.pipeline_entry_exists_for(entry)
 

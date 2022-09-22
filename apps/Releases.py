@@ -11,12 +11,6 @@ def app():
 
 	pipeline_info_file = st.sidebar.file_uploader("Select Pipeline Info JSON file", type='json')
 	release_info_file = st.sidebar.file_uploader("Select Release Info UTF-8 CSV file", type='csv')
-	release_form = st.sidebar.form('Would you like to limit your metrics to a date range?')
-	release_form.subheader('Fill out dates and submit to limit the results:')
-	start_date = release_form.date_input('Start Date', value=date.today() - timedelta(days=90))
-	end_date = release_form.date_input('End Date', value=date.today())
-	# TODO: Add a dropdown to select the column for pipeline override (Y/N field for if the release was on a pipeline)
-	submit_button = release_form.form_submit_button(label='Submit')
 
 	if pipeline_info_file is None:
 		st.header('Please select a pipeline json file to continue.')
@@ -30,10 +24,21 @@ def app():
 		display_example_csv_df()
 		return
 
+	release_df = pd.read_csv(release_info_file, keep_default_na=False)
+	# release_df.columns = release_df.columns.str.replace(' ', '')
+	release_df_column_picker = ['No'] + list(release_df.columns)
+
+	release_form = st.sidebar.form('Would you like to limit your metrics to a date range?')
+	release_form.subheader('Fill out dates and submit to limit the results:')
+	start_date = release_form.date_input('Start Date', value=date.today() - timedelta(days=90))
+	end_date = release_form.date_input('End Date', value=date.today())
+	pipeline_override_column_name = release_form.selectbox('Do you have a Pipeline override column?',
+														   release_df_column_picker)
+	submit_button = release_form.form_submit_button(label='Submit')
+
 	json_calculator = ReleaseMetricCalcClass()
-	json_calculator.prepare_for_metrics(pipeline_info_file, release_info_file)
+	json_calculator.prepare_for_metrics(pipeline_info_file, release_df, pipeline_override_column_name)
 	if submit_button:
-		# TODO: Add in the pipeline override column name and build functionality to default that to a pipeline release.
 		json_calculator.run_release_metrics(start_date, end_date)
 	else:
 		json_calculator.run_release_metrics()
