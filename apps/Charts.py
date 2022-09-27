@@ -562,7 +562,7 @@ def build_cycle_time_scatterplot(chart_builder: ChartBuilderClass):
 
 	rolling_avg = cycle_scatter_chart.mark_line(color='black').transform_window(
 		rolling_mean='mean(Age)',
-		frame=[-30, 0],
+		frame=[-30, 10],
 		groupby=['CycleTimeAvg']
 	).encode(
 		x='Done_Date:T',
