@@ -13,6 +13,8 @@ from unittest import mock
 ###################################
 # FIXTURES
 ###################################
+#TODO: Build a test for filtering to a start date, but finding no completed items in that date range.
+
 # This is the dataframe that mimics an input file (with column names already stripped of spaces)
 @pytest.fixture()
 def chart_input_df():
