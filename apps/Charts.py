@@ -28,6 +28,7 @@ def app():
 											  step=1)
 	use_start_date = chart_form.checkbox('Check to specify a starting date below:')
 	chart_start_date = chart_form.date_input('Data Start Date', value=date.today() - timedelta(days=90))
+	chart_end_date = chart_form.date_input('Data End Date', value=date.today())
 
 	submit_button = chart_form.form_submit_button(label='Build Charts')
 
@@ -39,6 +40,11 @@ def app():
 		st.write('Please make sure the Start and End Status Columns are different')
 		return
 
+	if use_start_date:
+		if chart_start_date > chart_end_date:
+			st.write('Start Date must be less than or equal to End Date')
+			return
+
 	# This markdown fixes the tooltip overlay for charts when you go to full screen mode.
 	st.markdown('<style>#vg-tooltip-element{z-index: 1000051}</style>',
 				unsafe_allow_html=True)
@@ -47,7 +53,7 @@ def app():
 	# Build Chart Data
 	# =========================================
 	chart_builder = ChartBuilderClass(start_col, end_col, name_col, use_start_date, str(chart_start_date),
-									  date.today(), daily_wip_limit)
+									  str(chart_end_date), daily_wip_limit)
 	chart_builder.prep_for_charting()
 	if chart_builder.prep_errors_were_found():
 		st.subheader('Errors were found when preparing to Chart data:')

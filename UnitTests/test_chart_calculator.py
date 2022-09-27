@@ -335,7 +335,7 @@ def input_chart_builder():
 	item_names = 'Name'
 	start_date_toggle = True
 	start_date = '2022-01-09'
-	end_date = date(2022, 2, 20)
+	end_date = '2022-02-20'
 	wip_limit = 4
 	return ChartBuilderClass(start_col, end_col, item_names, start_date_toggle, start_date, end_date, wip_limit)
 

@@ -10,7 +10,7 @@ class ChartBuilderClass:
 		self.end_col = end_col
 		self.name_col = str(name_col).replace(' ', '')
 		self.use_start_date = use_start_date
-		self.end_date = end_date
+		self.end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
 		self.wip_limit = wip_limit
 
 		self.prep_going_good = True
@@ -41,12 +41,16 @@ class ChartBuilderClass:
 	def prep_for_charting(self):
 		self.clean_df = self.build_clean_df(get_flow_dataframe())
 		if self.prep_going_good & self.use_start_date:
+			print('filtering clean_df')
 			self.clean_df = self.filter_clean_df_to_start_date(self.clean_df)
 		if self.prep_going_good:
+			print('building dates df')
 			self.dates_df = self.build_dates_df(self.clean_df, self.end_date)
 		if self.prep_going_good:
+			print('building completed df')
 			self.completed_items_df = self.build_completed_df(self.clean_df)
 		if self.prep_going_good:
+			print('building completed items df')
 			self.calc_completed_stats(self.completed_items_df, self.end_date)
 
 	# This is a check for errors.
@@ -161,6 +165,7 @@ class ChartBuilderClass:
 			self.errors.append('No in-progress data to chart from the input set. ' 
 							   'Verify there are valid dates in input file')
 			self.prep_going_good = False
+			print('found no in progress items')
 			return pd.DataFrame()
 
 		# convert date columns to date elements (NOT DATETIME)
@@ -222,6 +227,12 @@ class ChartBuilderClass:
 	def build_completed_df(self, in_df: pd.DataFrame) -> pd.DataFrame:
 		completed_mask = pd.notnull(in_df[self.end_col])
 		completed_items_df = in_df.loc[completed_mask]
+		if len(completed_items_df) == 0:
+			self.errors.append('No completed data to chart from the input set. ' 
+							   'Verify there are completed items in this date range')
+			self.prep_going_good = False
+			return pd.DataFrame()
+
 		self.prep_going_good = True
 		return completed_items_df
 

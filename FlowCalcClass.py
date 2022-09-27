@@ -100,7 +100,7 @@ class FlowCalcClass:
 	# =========================================
 	def get_flow_metric_assumptions(self):
 		assumptions = [['Flow metrics are calculated on completed items only.'],  # pragma: no cover
-					   ['Date range is inclusive of start and end sprint.'],  # pragma: no cover
+					   ['Date range is inclusive of start and end dates.'],  # pragma: no cover
 					   ['"In Progress" is defined as an item which has started and has not completed by the end date.'],  # pragma: no cover
 					   ['Rounding could cause a trivial amount of difference in some of these calculations.']  # pragma: no cover
 					   ]  # pragma: no cover
