@@ -526,7 +526,7 @@ def build_cycle_time_scatterplot(chart_builder: ChartBuilderClass):
 	scatter_df = chart_builder.get_cycle_time_scatter_df()
 	scatter_columns = scatter_df.columns.tolist()
 	cycle_scatter_chart = alt.Chart(scatter_df, title="Cycle Time Scatterplot")
-	scatter_plot = cycle_scatter_chart.mark_circle(size=60).encode(
+	scatter_plot = cycle_scatter_chart.mark_circle(size=100).encode(
 		x=alt.X('Done_Date:T', title='Completed Date'),
 		y=alt.Y('Age:Q', title='Age'),
 		tooltip=scatter_columns
@@ -562,7 +562,7 @@ def build_cycle_time_scatterplot(chart_builder: ChartBuilderClass):
 
 	rolling_avg = cycle_scatter_chart.mark_line(color='black').transform_window(
 		rolling_mean='mean(Age)',
-		frame=[-30, 10],
+		frame=[-30, 0],
 		groupby=['CycleTimeAvg']
 	).encode(
 		x='Done_Date:T',
