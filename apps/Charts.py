@@ -282,7 +282,7 @@ def build_aging_wip(chart_builder: ChartBuilderClass):
 			 f'{cycle_time_85_confidence} total days to delivery. Does that cause any concern?')
 
 	aging_chart = alt.Chart(aging_df, title="Aging WIP")
-	aging_wip = aging_chart.mark_circle(size=60).encode(
+	aging_wip = aging_chart.mark_circle(size=100).encode(
 		x=alt.X('Status', title='Status'),
 		y=alt.Y('Age', title='Age'),
 		color='Status',
